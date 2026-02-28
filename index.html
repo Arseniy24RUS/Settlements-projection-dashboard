@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Населённые пункты России: прогноз численности и половозрастного состава населения</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+  <div id="loadingOverlay" class="loading-overlay visible" aria-live="polite">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div class="loading-title" id="loadingTitle">Инициализация дашборда…</div>
+      <div class="loading-subtitle" id="loadingSubtitle">Подключаются данные и картографические слои.</div>
+    </div>
+  </div>
+
+  <header class="page-header">
+    <div>
+      <h1>Населённые пункты России: прогноз численности и половозрастного состава населения</h1>
+      <p class="subtitle">Интерактивная картограмма, фильтрация по субъектам РФ и муниципальным образованиям, динамика численности населения, карточка населённого пункта и половозрастная пирамида.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost" id="openMethodologyBtn">Методика</button>
+      <button type="button" class="ghost" id="resetMapViewBtn">Сбросить вид карты</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel controls-panel">
+      <div class="panel-header compact">
+        <h2>Параметры анализа</h2>
+      </div>
+      <div class="controls-grid">
+        <label class="field">
+          <span>Сценарий</span>
+          <select id="scenarioSelect"></select>
+        </label>
+        <label class="field">
+          <span>Год на карте</span>
+          <select id="mapYearSelect"></select>
+        </label>
+        <label class="field">
+          <span>Базовый год для динамики</span>
+          <select id="baseYearSelect"></select>
+        </label>
+        <label class="field">
+          <span>Год половозрастной пирамиды</span>
+          <select id="pyramidYearSelect"></select>
+        </label>
+        <label class="field wide">
+          <span>Субъекты РФ</span>
+          <select id="regionSelect" multiple></select>
+        </label>
+        <label class="field wide">
+          <span>Муниципальные образования</span>
+          <select id="municipalitySelect" multiple></select>
+        </label>
+      </div>
+      <div class="toggles-row">
+        <label class="toggle"><input type="checkbox" id="centralPlacesToggle" checked> <span>Показывать опорные / центральные населённые пункты отдельным слоем</span></label>
+        <label class="toggle"><input type="checkbox" id="autoPyramidToggle" checked> <span>Синхронизировать год пирамиды с годом карты</span></label>
+      </div>
+      <div class="controls-actions">
+        <button type="button" id="applyFiltersBtn">Применить</button>
+        <button type="button" class="ghost" id="clearFiltersBtn">Сбросить фильтры</button>
+        <button type="button" class="ghost" id="exportSelectionXlsxBtn">Выгрузить текущую выборку в XLSX</button>
+      </div>
+      <div class="error-banner hidden" id="errorBanner"></div>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <div class="kpi-label">Населённые пункты в выборке</div>
+        <div class="kpi-value" id="kpiSettlements">—</div>
+        <div class="kpi-note" id="kpiFilterNote">Вся Россия</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Суммарная численность</div>
+        <div class="kpi-value" id="kpiPopulation">—</div>
+        <div class="kpi-note" id="kpiPopulationNote">—</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Среднее изменение к базовому году</div>
+        <div class="kpi-value" id="kpiDelta">—</div>
+        <div class="kpi-note" id="kpiDeltaNote">—</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Опорные / центральные пункты</div>
+        <div class="kpi-value" id="kpiCentral">—</div>
+        <div class="kpi-note" id="kpiCentralNote">—</div>
+      </article>
+    </section>
+
+    <section class="grid-two">
+      <article class="panel map-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Картограмма населённых пунктов</h2>
+            <p id="mapCaption">Размер окружности пропорционален численности населения, цвет отражает изменение численности к базовому году.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="ghost" id="exportMapPngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportMapXlsxBtn">XLSX</button>
+          </div>
+        </div>
+        <div class="legend-row">
+          <div class="legend-block">
+            <span class="legend-title">Цвет</span>
+            <span class="legend-scale gradient-growth"></span>
+            <span class="legend-labels"><span>Снижение</span><span>Без изменений</span><span>Рост</span></span>
+          </div>
+          <div class="legend-block">
+            <span class="legend-title">Размер</span>
+            <span class="legend-circles">
+              <span class="circle s"></span>
+              <span class="circle m"></span>
+              <span class="circle l"></span>
+            </span>
+            <span class="legend-labels"><span>меньше</span><span></span><span>больше</span></span>
+          </div>
+        </div>
+        <div id="map"></div>
+      </article>
+
+      <article class="panel side-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Выбранный населённый пункт</h2>
+            <p id="selectionHint">Щёлкните по окружности на карте или выберите пункт из таблицы-лидера.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="ghost" id="exportSelectedXlsxBtn">XLSX</button>
+          </div>
+        </div>
+        <div id="selectedSettlementSummary" class="selection-summary empty-state">Населённый пункт ещё не выбран.</div>
+        <div id="selectedSettlementMeta" class="meta-table"></div>
+      </article>
+    </section>
+
+    <section class="grid-two">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Динамика численности населения по текущей выборке</h2>
+            <p>Фактические переписные значения 1989, 2002, 2010 и 2021 годов показаны отдельно от прогнозной траектории.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="ghost" id="exportAggregatePngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportAggregateXlsxBtn">XLSX</button>
+          </div>
+        </div>
+        <div id="aggregateChart" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Крупнейшие населённые пункты в текущей выборке</h2>
+            <p>Нажатие на строку открывает карточку выбранного населённого пункта.</p>
+          </div>
+        </div>
+        <div id="topSettlements" class="top-table"></div>
+      </article>
+    </section>
+
+    <section class="grid-two equal-height">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Динамика выбранного населённого пункта</h2>
+            <p>Фактические и прогнозные значения представлены раздельно.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="ghost" id="exportSettlementPngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportSettlementXlsxBtn">XLSX</button>
+          </div>
+        </div>
+        <div id="settlementChart" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Половозрастная пирамида</h2>
+            <p>Профиль муниципального образования масштабируется на численность выбранного населённого пункта в соответствующем году.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="ghost" id="exportPyramidPngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportPyramidXlsxBtn">XLSX</button>
+          </div>
+        </div>
+        <div id="pyramidChart" class="chart"></div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="page-footer">Ситковский Арсений Михайлович, 2026</footer>
+
+  <dialog id="methodologyDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-header">
+        <h2>Описание методики исследования</h2>
+        <button type="submit" class="ghost">Закрыть</button>
+      </div>
+      <div class="dialog-content">
+        <p>Дашборд предназначен для интерактивного анализа расчётов численности и половозрастного состава населения населённых пунктов России на основе результатов авторской прогнозной модели. На карте отображаются все населённые пункты, для которых доступны исходные сведения о численности населения и пространственной локализации. Размер символа отражает абсолютную численность населения выбранного года, а цвет — относительное изменение численности по сравнению с базовым годом.</p>
+        <p>Система поддерживает два сценария: вариант с учётом миграции и вариант без учёта миграции. Временной ряд для каждого населённого пункта включает переписные/фактические контрольные точки 1989, 2002, 2010 и 2021 годов и прогнозную траекторию на 2021–2100 годы. На графиках фактические значения отображаются отдельно от прогнозных для визуального разграничения наблюдаемой и моделируемой частей ряда.</p>
+        <p>Половозрастная пирамида населённого пункта строится по схеме пропорционального переноса возрастно-половой структуры соответствующего муниципального образования на численность выбранного населённого пункта. Иными словами, муниципальный возрастно-половой профиль нормируется на общую численность муниципалитета и далее масштабируется на численность анализируемого населённого пункта в выбранном году. Такой приём позволяет аналитически восстановить вероятный половозрастной состав населённого пункта при отсутствии прямого прогноза по возрасту и полу на поселенческом уровне.</p>
+        <p>Фильтрация по субъектам РФ и муниципальным образованиям организована по принципу множественного выбора. В карточке выбранного населённого пункта выводятся все характеристики, содержащиеся в файле <code>Settlement_names.csv</code>, а также служебные идентификаторы, необходимые для привязки к прогнозным таблицам. Дополнительным слоем могут быть показаны опорные / центральные населённые пункты, определённые по полю <code>Central_places</code>.</p>
+        <p>Экспорт в PNG и XLSX предназначен для включения результатов в публикации, презентации и аналитические отчёты без дополнительной обработки. Все вычисления выполняются непосредственно в браузере, что позволяет размещать дашборд на статическом хостинге, включая GitHub Pages.</p>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/deck.gl@8.9.36/dist.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script type="module" src="./assets/app.js"></script>
+</body>
+</html>
