@@ -181,10 +181,14 @@ async function initDuckDB() {
   setLoading(true, 'Подключение вычислительного движка…', 'Подготавливается DuckDB-Wasm для выполнения запросов непосредственно в браузере.');
   const bundles = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle(bundles);
-  const worker = new Worker(bundle.mainWorker);
+  const workerUrl = URL.createObjectURL(
+    new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' }),
+  );
+  const worker = new Worker(workerUrl);
   const logger = new duckdb.ConsoleLogger();
   state.db = new duckdb.AsyncDuckDB(logger, worker);
   await state.db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+  URL.revokeObjectURL(workerUrl);
   state.conn = await state.db.connect();
 }
 
