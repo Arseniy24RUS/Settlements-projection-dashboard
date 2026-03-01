@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css">
-  <link rel="stylesheet" href="./assets/styles.20260301-ui-v3.css">
+  <link rel="stylesheet" href="./assets/styles.20260301-components-v4.css">
 </head>
 <body>
   <div id="loadingOverlay" class="loading-overlay visible" aria-live="polite">
@@ -23,7 +23,7 @@
   <header class="page-header">
     <div>
       <h1>Населённые пункты России: прогноз численности и половозрастного состава населения</h1>
-      <p class="subtitle">Интерактивная картограмма, фильтрация по субъектам РФ и муниципальным образованиям, динамика численности населения, карточка населённого пункта и половозрастная пирамида.</p>
+      <p class="subtitle">Интерактивная картограмма, фильтрация по субъектам РФ и муниципальным образованиям, динамика численности населения, рождаемости, смертности и миграции, карточка населённого пункта, половозрастные и миграционные пирамиды.</p>
     </div>
     <div class="header-actions">
       <button type="button" class="ghost" id="openMethodologyBtn">Методика</button>
@@ -63,9 +63,9 @@
       <div class="panel-header compact">
         <h2>Параметры анализа</h2>
       </div>
-      <div class="controls-grid">
+      <div class="controls-grid controls-grid-wide">
         <div class="field">
-          <span>Сценарий для карты и половозрастной пирамиды</span>
+          <span>Сценарий для карты, половозрастной и миграционных пирамид</span>
           <div class="segmented-control" id="scenarioButtons"></div>
         </div>
         <label class="field">
@@ -77,6 +77,7 @@
           <select id="municipalitySelect" multiple></select>
         </label>
       </div>
+      <div class="controls-hint" id="municipalityHint">Список муниципалитетов раскрывается после выбора одного или нескольких субъектов РФ.</div>
       <div class="controls-actions">
         <button type="button" id="applyFiltersBtn">Применить</button>
         <button type="button" class="ghost" id="clearFiltersBtn">Сбросить фильтры</button>
@@ -148,22 +149,25 @@
           </div>
         </div>
 
-        <div class="legend-row">
-          <div class="legend-block">
-            <div class="legend-head"><span class="legend-title" id="mapColorLegendTitle">Цвет: прирост численности населения XXXX г. к XXXX г.</span></div>
-            <span class="legend-scale gradient-traffic"></span>
-            <div class="legend-labels three" id="mapColorLegendLabels"><span>−10%</span><span>0%</span><span>+10%</span></div>
+        <details class="legend-details">
+          <summary>Легенда карты</summary>
+          <div class="legend-row">
+            <div class="legend-block">
+              <div class="legend-head"><span class="legend-title" id="mapColorLegendTitle">Цвет: прирост численности населения XXXX г. к XXXX г.</span></div>
+              <span class="legend-scale gradient-traffic"></span>
+              <div class="legend-labels three" id="mapColorLegendLabels"><span>−10%</span><span>0%</span><span>+10%</span></div>
+            </div>
+            <div class="legend-block">
+              <div class="legend-head"><span class="legend-title">Размер окружности: фиксированные классы численности</span></div>
+              <div class="size-legend-grid" id="sizeLegend"></div>
+            </div>
+            <div class="legend-block">
+              <div class="legend-head"><span class="legend-title">Опорные населённые пункты</span></div>
+              <div class="legend-subnote">Синяя окантовка показывает все опорные пункты. Буква внутри окружности уточняет тип.</div>
+              <div class="central-type-legend" id="centralTypeLegend"></div>
+            </div>
           </div>
-          <div class="legend-block">
-            <div class="legend-head"><span class="legend-title">Размер окружности: фиксированные классы численности</span></div>
-            <div class="size-legend-grid" id="sizeLegend"></div>
-          </div>
-          <div class="legend-block">
-            <div class="legend-head"><span class="legend-title">Опорные населённые пункты</span></div>
-            <div class="legend-subnote">Синяя окантовка показывает все опорные пункты. Буква внутри окружности уточняет тип.</div>
-            <div class="central-type-legend" id="centralTypeLegend"></div>
-          </div>
-        </div>
+        </details>
 
         <div id="map"></div>
       </article>
@@ -266,6 +270,115 @@
         <div id="pyramidChart" class="chart"></div>
       </article>
     </section>
+
+    <section class="panel thematic-block" id="fertilityBlock">
+      <div class="panel-header">
+        <div>
+          <h2>Рождаемость</h2>
+          <p>Блок показывает динамику числа рождений и суммарного коэффициента рождаемости по текущей выборке. Фактические наблюдения отделены от прогнозных траекторий.</p>
+        </div>
+        <div class="panel-actions panel-actions-stack">
+          <div class="compare-group">
+            <span class="compare-title">Сценарии на графиках</span>
+            <label class="compare-option"><input type="checkbox" id="fertilityScenarioWithMIG" data-scenario="withMIG"> С учётом миграции</label>
+            <label class="compare-option"><input type="checkbox" id="fertilityScenarioNoMIG" data-scenario="noMIG"> Без миграции</label>
+          </div>
+          <div class="mini-export-group">
+            <button type="button" class="ghost" id="exportFertilityPngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportFertilityXlsxBtn">XLSX</button>
+          </div>
+        </div>
+      </div>
+      <div class="thematic-grid two">
+        <div>
+          <div class="subchart-title">Число рождений</div>
+          <div id="fertilityBirthsChart" class="chart compact"></div>
+        </div>
+        <div>
+          <div class="subchart-title">Суммарный коэффициент рождаемости</div>
+          <div id="fertilityTfrChart" class="chart compact"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel thematic-block" id="mortalityBlock">
+      <div class="panel-header">
+        <div>
+          <h2>Смертность</h2>
+          <p>Блок показывает динамику числа умерших и общего коэффициента смертности по текущей выборке. Фактические наблюдения отделены от прогнозных траекторий.</p>
+        </div>
+        <div class="panel-actions panel-actions-stack">
+          <div class="compare-group">
+            <span class="compare-title">Сценарии на графиках</span>
+            <label class="compare-option"><input type="checkbox" id="mortalityScenarioWithMIG" data-scenario="withMIG"> С учётом миграции</label>
+            <label class="compare-option"><input type="checkbox" id="mortalityScenarioNoMIG" data-scenario="noMIG"> Без миграции</label>
+          </div>
+          <div class="mini-export-group">
+            <button type="button" class="ghost" id="exportMortalityPngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportMortalityXlsxBtn">XLSX</button>
+          </div>
+        </div>
+      </div>
+      <div class="thematic-grid two">
+        <div>
+          <div class="subchart-title">Число умерших</div>
+          <div id="mortalityDeathsChart" class="chart compact"></div>
+        </div>
+        <div>
+          <div class="subchart-title">Общий коэффициент смертности</div>
+          <div id="mortalityCdrChart" class="chart compact"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel thematic-block" id="migrationBlock">
+      <div class="panel-header">
+        <div>
+          <h2>Миграция</h2>
+          <p>Блок показывает динамику притока, оттока и сальдо миграции по текущей выборке, а также половозрастную структуру притока и оттока по активному сценарию.</p>
+        </div>
+        <div class="panel-actions panel-actions-stack">
+          <div class="compare-group">
+            <span class="compare-title">Сценарии на графике</span>
+            <label class="compare-option"><input type="checkbox" id="migrationScenarioWithMIG" data-scenario="withMIG"> С учётом миграции</label>
+            <label class="compare-option"><input type="checkbox" id="migrationScenarioNoMIG" data-scenario="noMIG"> Без миграции</label>
+          </div>
+          <div class="mini-export-group">
+            <button type="button" class="ghost" id="exportMigrationPngBtn">PNG</button>
+            <button type="button" class="ghost" id="exportMigrationXlsxBtn">XLSX</button>
+          </div>
+        </div>
+      </div>
+      <div id="migrationTotalsChart" class="chart"></div>
+
+      <div class="local-controls-grid migration-controls-grid">
+        <div class="local-slider-card">
+          <div class="local-slider-head">
+            <span class="local-slider-label">Год миграционных пирамид</span>
+            <strong class="local-slider-value" id="migrationYearDisplay">—</strong>
+          </div>
+          <div id="migrationYearSlider"></div>
+          <div class="slider-endpoints"><span>2021</span><span>2100</span></div>
+        </div>
+        <div class="local-side-card">
+          <div class="local-side-stack">
+            <div class="local-note">Возрастно-половая структура притока и оттока строится по текущей пространственной выборке и активному сценарию, заданному в верхней части страницы.</div>
+            <div class="local-note strong-note" id="migrationScenarioNote">Активный сценарий: —</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="thematic-grid two">
+        <div>
+          <div class="subchart-title">Половозрастная структура притока</div>
+          <div id="migrationInflowPyramidChart" class="chart compact"></div>
+        </div>
+        <div>
+          <div class="subchart-title">Половозрастная структура оттока</div>
+          <div id="migrationOutflowPyramidChart" class="chart compact"></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="page-footer">Ситковский Арсений Михайлович, 2026</footer>
@@ -279,7 +392,8 @@
       <div class="dialog-content">
         <p>Дашборд предназначен для интерактивного анализа расчётов численности и половозрастного состава населения населённых пунктов России на основе результатов авторской прогнозной модели. На карте отображаются все населённые пункты, для которых доступны сведения о численности населения и пространственной локализации. Размер символа задаётся фиксированными классами численности населения, а цвет показывает относительное изменение численности по сравнению с выбранным базовым годом.</p>
         <p>Система поддерживает два сценария: вариант с учётом миграции и вариант без миграции. Временной ряд для каждого населённого пункта включает переписные контрольные точки 1989, 2002, 2010 и 2021 годов и прогнозную траекторию на 2021–2100 годы. На графиках фактические значения отделены по цвету от прогнозных серий; при необходимости можно одновременно выводить оба сценария.</p>
-        <p>Половозрастная пирамида населённого пункта строится по схеме пропорционального переноса возрастно-половой структуры соответствующего муниципального образования на численность выбранного населённого пункта. Муниципальный возрастно-половой профиль нормируется на общую численность муниципалитета и затем масштабируется на численность анализируемого населённого пункта в выбранном году. Такой приём позволяет аналитически восстановить вероятный половозрастной состав населённого пункта при отсутствии прямого поселенческого прогноза по возрасту и полу.</p>
+        <p>Половозрастная пирамида населённого пункта строится по схеме пропорционального переноса возрастно-половой структуры соответствующего муниципального образования на численность выбранного населённого пункта. Муниципальный возрастно-половой профиль нормируется на общую численность муниципалитета и затем масштабируется на численность анализируемого населённого пункта в выбранном году.</p>
+        <p>Дополнительно дашборд включает тематические блоки по рождаемости, смертности и миграции. Для рождаемости показываются число рождений и суммарный коэффициент рождаемости; для смертности — число умерших и общий коэффициент смертности; для миграции — приток, отток и сальдо. Возрастно-половые пирамиды миграции строятся по пятилетним возрастным группам на основе муниципальных таблиц притока и оттока и агрегируются по текущей пространственной выборке.</p>
         <p>Фильтрация по субъектам РФ и муниципальным образованиям организована по принципу множественного выбора. После применения фильтров карта автоматически масштабируется к отображаемым точкам. Населённые пункты с нулевой численностью населения в выбранном году на карте не показываются, что позволяет визуально наблюдать исчезновение поселений в динамике.</p>
         <p>Опорные населённые пункты, определённые по полю <code>Central_places</code>, могут отображаться дополнительной синей окантовкой. Для основных типов опорных пунктов используются буквенные обозначения внутри окружности; точный тип сохраняется в карточке и всплывающей подсказке. Экспорт в PNG и XLSX предназначен для включения результатов в публикации, презентации и аналитические отчёты. Все вычисления выполняются непосредственно в браузере, что позволяет размещать дашборд на статическом хостинге, включая GitHub Pages.</p>
       </div>
@@ -293,7 +407,7 @@
   <script src="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script type="module" src="./assets/app.20260301-ui-v3.js"></script>
-  <!-- build: 2026-03-01-ui-v3 -->
+  <script type="module" src="./assets/app.20260301-components-v4.js"></script>
+  <!-- build: 2026-03-01-components-v4 -->
 </body>
 </html>
