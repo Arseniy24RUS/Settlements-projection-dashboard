@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
-  <link rel="stylesheet" href="./assets/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css">
+  <link rel="stylesheet" href="./assets/styles.20260301-ui-v3.css">
 </head>
 <body>
   <div id="loadingOverlay" class="loading-overlay visible" aria-live="polite">
@@ -31,39 +32,50 @@
   </header>
 
   <main class="layout">
+    <section class="panel timeline-panel">
+      <div class="panel-header compact">
+        <div>
+          <h2>Временной горизонт анализа</h2>
+          <p>Левая ручка задаёт базовый год сравнения, правая — последний год отображения на графиках.</p>
+        </div>
+      </div>
+      <div class="timeline-readout">
+        <div class="timeline-chip">
+          <div class="label">Базовый год</div>
+          <div class="value" id="baseYearDisplay">—</div>
+        </div>
+        <div class="timeline-chip">
+          <div class="label">Горизонт прогноза</div>
+          <div class="value" id="chartSpanDisplay">—</div>
+        </div>
+        <div class="timeline-chip">
+          <div class="label">Последний год на графиках</div>
+          <div class="value" id="chartEndDisplay">—</div>
+        </div>
+      </div>
+      <div class="timeline-slider-wrap">
+        <div id="chartRangeSlider"></div>
+        <div class="slider-endpoints"><span>1989</span><span>2100</span></div>
+      </div>
+    </section>
+
     <section class="panel controls-panel">
       <div class="panel-header compact">
         <h2>Параметры анализа</h2>
       </div>
       <div class="controls-grid">
+        <div class="field">
+          <span>Сценарий для карты и половозрастной пирамиды</span>
+          <div class="segmented-control" id="scenarioButtons"></div>
+        </div>
         <label class="field">
-          <span>Сценарий</span>
-          <select id="scenarioSelect"></select>
-        </label>
-        <label class="field">
-          <span>Год на карте</span>
-          <select id="mapYearSelect"></select>
-        </label>
-        <label class="field">
-          <span>Базовый год для динамики</span>
-          <select id="baseYearSelect"></select>
-        </label>
-        <label class="field">
-          <span>Год половозрастной пирамиды</span>
-          <select id="pyramidYearSelect"></select>
-        </label>
-        <label class="field wide">
           <span>Субъекты РФ</span>
           <select id="regionSelect" multiple></select>
         </label>
-        <label class="field wide">
+        <label class="field">
           <span>Муниципальные образования</span>
           <select id="municipalitySelect" multiple></select>
         </label>
-      </div>
-      <div class="toggles-row">
-        <label class="toggle"><input type="checkbox" id="centralPlacesToggle" checked> <span>Показывать опорные / центральные населённые пункты отдельным слоем</span></label>
-        <label class="toggle"><input type="checkbox" id="autoPyramidToggle" checked> <span>Синхронизировать год пирамиды с годом карты</span></label>
       </div>
       <div class="controls-actions">
         <button type="button" id="applyFiltersBtn">Применить</button>
@@ -90,7 +102,7 @@
         <div class="kpi-note" id="kpiDeltaNote">—</div>
       </article>
       <article class="kpi-card">
-        <div class="kpi-label">Опорные / центральные пункты</div>
+        <div class="kpi-label">Опорные населённые пункты</div>
         <div class="kpi-value" id="kpiCentral">—</div>
         <div class="kpi-note" id="kpiCentralNote">—</div>
       </article>
@@ -101,29 +113,58 @@
         <div class="panel-header">
           <div>
             <h2>Картограмма населённых пунктов</h2>
-            <p id="mapCaption">Размер окружности пропорционален численности населения, цвет отражает изменение численности к базовому году.</p>
+            <p id="mapCaption">Размер окружности отражает классы численности населения, цвет — изменение численности к базовому году.</p>
           </div>
           <div class="panel-actions">
             <button type="button" class="ghost" id="exportMapPngBtn">PNG</button>
             <button type="button" class="ghost" id="exportMapXlsxBtn">XLSX</button>
           </div>
         </div>
-        <div class="legend-row">
-          <div class="legend-block">
-            <span class="legend-title">Цвет</span>
-            <span class="legend-scale gradient-growth"></span>
-            <span class="legend-labels"><span>Снижение</span><span>Без изменений</span><span>Рост</span></span>
+
+        <div class="local-controls-grid">
+          <div class="local-slider-card">
+            <div class="local-slider-head">
+              <span class="local-slider-label">Год на карте</span>
+              <strong class="local-slider-value" id="mapYearDisplay">—</strong>
+            </div>
+            <div id="mapYearSlider"></div>
+            <div class="slider-endpoints"><span>1989</span><span>2100</span></div>
           </div>
-          <div class="legend-block">
-            <span class="legend-title">Размер</span>
-            <span class="legend-circles">
-              <span class="circle s"></span>
-              <span class="circle m"></span>
-              <span class="circle l"></span>
-            </span>
-            <span class="legend-labels"><span>меньше</span><span></span><span>больше</span></span>
+          <div class="local-side-card">
+            <div class="local-side-stack">
+              <label class="toggle"><input type="checkbox" id="centralPlacesToggle" checked> <span>Показывать опорные населённые пункты</span></label>
+              <div class="mini-fields">
+                <div class="mini-field">
+                  <label for="deltaNegativeInput">Крайняя убыль, %</label>
+                  <input type="number" id="deltaNegativeInput" value="-10" step="1">
+                </div>
+                <div class="mini-field">
+                  <label for="deltaPositiveInput">Крайний прирост, %</label>
+                  <input type="number" id="deltaPositiveInput" value="10" step="1">
+                </div>
+              </div>
+              <div class="local-note">На карте показываются только населённые пункты с ненулевой численностью населения в выбранном году.</div>
+            </div>
           </div>
         </div>
+
+        <div class="legend-row">
+          <div class="legend-block">
+            <div class="legend-head"><span class="legend-title" id="mapColorLegendTitle">Цвет: прирост численности населения XXXX г. к XXXX г.</span></div>
+            <span class="legend-scale gradient-traffic"></span>
+            <div class="legend-labels three" id="mapColorLegendLabels"><span>−10%</span><span>0%</span><span>+10%</span></div>
+          </div>
+          <div class="legend-block">
+            <div class="legend-head"><span class="legend-title">Размер окружности: фиксированные классы численности</span></div>
+            <div class="size-legend-grid" id="sizeLegend"></div>
+          </div>
+          <div class="legend-block">
+            <div class="legend-head"><span class="legend-title">Опорные населённые пункты</span></div>
+            <div class="legend-subnote">Синяя окантовка показывает все опорные пункты. Буква внутри окружности уточняет тип.</div>
+            <div class="central-type-legend" id="centralTypeLegend"></div>
+          </div>
+        </div>
+
         <div id="map"></div>
       </article>
 
@@ -147,9 +188,14 @@
         <div class="panel-header">
           <div>
             <h2>Динамика численности населения по текущей выборке</h2>
-            <p>Фактические переписные значения 1989, 2002, 2010 и 2021 годов показаны отдельно от прогнозной траектории.</p>
+            <p>Фактические переписные значения 1989, 2002, 2010 и 2021 годов выделены отдельно от прогнозных траекторий.</p>
           </div>
           <div class="panel-actions">
+            <div class="compare-group">
+              <span class="compare-title">Сценарии на графике</span>
+              <label class="compare-option"><input type="checkbox" id="aggregateScenarioWithMIG" data-scenario="withMIG"> С учётом миграции</label>
+              <label class="compare-option"><input type="checkbox" id="aggregateScenarioNoMIG" data-scenario="noMIG"> Без миграции</label>
+            </div>
             <button type="button" class="ghost" id="exportAggregatePngBtn">PNG</button>
             <button type="button" class="ghost" id="exportAggregateXlsxBtn">XLSX</button>
           </div>
@@ -173,9 +219,14 @@
         <div class="panel-header">
           <div>
             <h2>Динамика выбранного населённого пункта</h2>
-            <p>Фактические и прогнозные значения представлены раздельно.</p>
+            <p>Фактические и прогнозные значения представлены раздельно; прогноз можно сравнивать сразу по двум сценариям.</p>
           </div>
           <div class="panel-actions">
+            <div class="compare-group">
+              <span class="compare-title">Сценарии на графике</span>
+              <label class="compare-option"><input type="checkbox" id="settlementScenarioWithMIG" data-scenario="withMIG"> С учётом миграции</label>
+              <label class="compare-option"><input type="checkbox" id="settlementScenarioNoMIG" data-scenario="noMIG"> Без миграции</label>
+            </div>
             <button type="button" class="ghost" id="exportSettlementPngBtn">PNG</button>
             <button type="button" class="ghost" id="exportSettlementXlsxBtn">XLSX</button>
           </div>
@@ -194,6 +245,24 @@
             <button type="button" class="ghost" id="exportPyramidXlsxBtn">XLSX</button>
           </div>
         </div>
+
+        <div class="local-controls-grid">
+          <div class="local-slider-card">
+            <div class="local-slider-head">
+              <span class="local-slider-label">Год половозрастной пирамиды</span>
+              <strong class="local-slider-value" id="pyramidYearDisplay">—</strong>
+            </div>
+            <div id="pyramidYearSlider"></div>
+            <div class="slider-endpoints"><span>2021</span><span>2100</span></div>
+          </div>
+          <div class="local-side-card">
+            <div class="local-side-stack">
+              <label class="toggle"><input type="checkbox" id="autoPyramidToggle" checked> <span>Синхронизировать год ПВП с картой</span></label>
+              <div class="local-note">Если выбран год карты до 2021 года, при синхронизации для пирамиды используется 2021 год — первый год доступного половозрастного профиля.</div>
+            </div>
+          </div>
+        </div>
+
         <div id="pyramidChart" class="chart"></div>
       </article>
     </section>
@@ -208,11 +277,11 @@
         <button type="submit" class="ghost">Закрыть</button>
       </div>
       <div class="dialog-content">
-        <p>Дашборд предназначен для интерактивного анализа расчётов численности и половозрастного состава населения населённых пунктов России на основе результатов авторской прогнозной модели. На карте отображаются все населённые пункты, для которых доступны исходные сведения о численности населения и пространственной локализации. Размер символа отражает абсолютную численность населения выбранного года, а цвет — относительное изменение численности по сравнению с базовым годом.</p>
-        <p>Система поддерживает два сценария: вариант с учётом миграции и вариант без учёта миграции. Временной ряд для каждого населённого пункта включает переписные/фактические контрольные точки 1989, 2002, 2010 и 2021 годов и прогнозную траекторию на 2021–2100 годы. На графиках фактические значения отображаются отдельно от прогнозных для визуального разграничения наблюдаемой и моделируемой частей ряда.</p>
-        <p>Половозрастная пирамида населённого пункта строится по схеме пропорционального переноса возрастно-половой структуры соответствующего муниципального образования на численность выбранного населённого пункта. Иными словами, муниципальный возрастно-половой профиль нормируется на общую численность муниципалитета и далее масштабируется на численность анализируемого населённого пункта в выбранном году. Такой приём позволяет аналитически восстановить вероятный половозрастной состав населённого пункта при отсутствии прямого прогноза по возрасту и полу на поселенческом уровне.</p>
-        <p>Фильтрация по субъектам РФ и муниципальным образованиям организована по принципу множественного выбора. В карточке выбранного населённого пункта выводятся все характеристики, содержащиеся в файле <code>Settlement_names.csv</code>, а также служебные идентификаторы, необходимые для привязки к прогнозным таблицам. Дополнительным слоем могут быть показаны опорные / центральные населённые пункты, определённые по полю <code>Central_places</code>.</p>
-        <p>Экспорт в PNG и XLSX предназначен для включения результатов в публикации, презентации и аналитические отчёты без дополнительной обработки. Все вычисления выполняются непосредственно в браузере, что позволяет размещать дашборд на статическом хостинге, включая GitHub Pages.</p>
+        <p>Дашборд предназначен для интерактивного анализа расчётов численности и половозрастного состава населения населённых пунктов России на основе результатов авторской прогнозной модели. На карте отображаются все населённые пункты, для которых доступны сведения о численности населения и пространственной локализации. Размер символа задаётся фиксированными классами численности населения, а цвет показывает относительное изменение численности по сравнению с выбранным базовым годом.</p>
+        <p>Система поддерживает два сценария: вариант с учётом миграции и вариант без миграции. Временной ряд для каждого населённого пункта включает переписные контрольные точки 1989, 2002, 2010 и 2021 годов и прогнозную траекторию на 2021–2100 годы. На графиках фактические значения отделены по цвету от прогнозных серий; при необходимости можно одновременно выводить оба сценария.</p>
+        <p>Половозрастная пирамида населённого пункта строится по схеме пропорционального переноса возрастно-половой структуры соответствующего муниципального образования на численность выбранного населённого пункта. Муниципальный возрастно-половой профиль нормируется на общую численность муниципалитета и затем масштабируется на численность анализируемого населённого пункта в выбранном году. Такой приём позволяет аналитически восстановить вероятный половозрастной состав населённого пункта при отсутствии прямого поселенческого прогноза по возрасту и полу.</p>
+        <p>Фильтрация по субъектам РФ и муниципальным образованиям организована по принципу множественного выбора. После применения фильтров карта автоматически масштабируется к отображаемым точкам. Населённые пункты с нулевой численностью населения в выбранном году на карте не показываются, что позволяет визуально наблюдать исчезновение поселений в динамике.</p>
+        <p>Опорные населённые пункты, определённые по полю <code>Central_places</code>, могут отображаться дополнительной синей окантовкой. Для основных типов опорных пунктов используются буквенные обозначения внутри окружности; точный тип сохраняется в карточке и всплывающей подсказке. Экспорт в PNG и XLSX предназначен для включения результатов в публикации, презентации и аналитические отчёты. Все вычисления выполняются непосредственно в браузере, что позволяет размещать дашборд на статическом хостинге, включая GitHub Pages.</p>
       </div>
     </form>
   </dialog>
@@ -221,9 +290,10 @@
   <script src="https://cdn.jsdelivr.net/npm/deck.gl@8.9.36/dist.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script type="module" src="./assets/app.20260301-cachebust-2.js"></script>
-  <!-- build: 2026-03-01-cachebust-2 -->
+  <script type="module" src="./assets/app.20260301-ui-v3.js"></script>
+  <!-- build: 2026-03-01-ui-v3 -->
 </body>
 </html>
