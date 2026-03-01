@@ -149,7 +149,6 @@ const state = {
 };
 
 
-document.addEventListener
 
 document.addEventListener('DOMContentLoaded', () => {
   init().catch((error) => {
@@ -188,7 +187,6 @@ async function loadConfig() {
 }
 
 
-function initControls()
 
 function initControls() {
   state.ui.activeScenario = state.config.defaultScenario;
@@ -271,7 +269,6 @@ function initControls() {
 }
 
 
-function bindEvents()
 
 function bindEvents() {
   els.scenarioButtons.addEventListener('click', (event) => {
@@ -330,7 +327,6 @@ function bindEvents() {
 }
 
 
-function bindScenarioCheckboxGroup
 
 function bindScenarioCheckboxGroup(firstEl, secondEl, onChange) {
   const handler = () => {
@@ -410,7 +406,6 @@ function setActiveScenario(scenarioId, { syncCharts = true, refresh = true } = {
 }
 
 
-function syncScenarioCheckboxGroupToActive
 
 function syncScenarioCheckboxGroupToActive(firstEl, secondEl, activeScenarioId) {
   const checkedCount = [firstEl, secondEl].filter((input) => input.checked).length;
@@ -482,7 +477,6 @@ async function prepareTables() {
 }
 
 
-async function loadFilterOptions()
 
 async function loadFilterOptions() {
   setLoading(true, 'Формирование фильтров…', 'Из таблицы населённых пунктов извлекаются перечни субъектов РФ и муниципальных образований.');
@@ -523,7 +517,6 @@ async function loadFilterOptions() {
 }
 
 
-function updateMunicipalityOptions()
 
 function updateMunicipalityOptions() {
   const selectedRegions = normalizeMultiValue(state.ui.regionTom.getValue());
@@ -571,7 +564,6 @@ function updateMunicipalityOptions() {
 }
 
 
-function initMap()
 
 function initMap() {
   const style = {
@@ -696,7 +688,6 @@ async function refreshAll() {
 }
 
 
-async function loadCurrentMapData()
 
 async function loadCurrentMapData() {
   const scenario = getScenario();
@@ -1665,7 +1656,6 @@ function renderSelectedSettlementCard() {
 }
 
 
-function renderSelectedSettlementChart()
 
 function renderSelectedSettlementChart() {
   const summary = state.currentSelectionBundle;
@@ -1838,7 +1828,6 @@ async function renderPyramid() {
 }
 
 
-function scaleAgeProfile
 
 function scaleAgeProfile(rows, targetTotal) {
   const cleaned = rows.map((row) => ({
@@ -2186,7 +2175,6 @@ function exportWorkbook(sheets, filename) {
 }
 
 
-function filterSeriesToWindow
 
 function filterSeriesToWindow(years, values) {
   const [startYear, endYear] = getChartRangeYears();
@@ -2268,7 +2256,6 @@ function getMunicipalMigrationAgeAlias(scenario, year) {
 }
 
 
-function populationExpression
 
 function populationExpression(year, indexAlias = 'i', forecastAlias = 'w') {
   if (year === 1989) return `CAST(${indexAlias}.Population_1989 AS DOUBLE)`;
