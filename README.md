@@ -16,6 +16,16 @@
 
 The project is intended as an applied instrument for regional studies, urban and rural analysis, public administration courses and exploratory demographic visualization. It helps connect demographic projection results with the geography of settlements and makes spatial differences more visible to researchers, students and policy analysts.
 
+### Visual overview
+
+![Settlements Projection Dashboard English hero](assets/visuals/hero-en.png)
+
+![English scenario walkthrough: filters, settlement click, charts and pyramid update](assets/visuals/scenario-en.gif)
+
+![English architecture diagram](assets/visuals/architecture-en.svg)
+
+![English methodology diagram](assets/visuals/methodology-en.svg)
+
 ### Live dashboard
 
 GitHub Pages: <https://arseniy24rus.github.io/Settlements-projection-dashboard/>
@@ -76,6 +86,16 @@ Unless otherwise stated, source code is released under the MIT License. Data, do
 `Settlements-projection-dashboard` — статический веб-дашборд для пространственного анализа демографических прогнозов на уровне населённых пунктов. Проект рассчитан на публикацию через GitHub Pages и другие статические хостинги, использует компактные файлы данных, клиентскую визуализацию и картографическое представление.
 
 Проект предназначен для региональных исследований, анализа городских и сельских территорий, учебных курсов по государственному управлению и разведочной демографической визуализации. Он помогает связать результаты демографического прогноза с географией населённых пунктов и делает пространственные различия более наглядными для исследователей, студентов и аналитиков политики.
+
+### Визуальный обзор
+
+![Главный экран дашборда на русском языке](assets/visuals/hero-ru.png)
+
+![Сценарий на русском языке: фильтры, выбор населённого пункта, обновление графиков и пирамиды](assets/visuals/scenario-ru.gif)
+
+![Диаграмма архитектуры на русском языке](assets/visuals/architecture-ru.svg)
+
+![Методологическая диаграмма на русском языке](assets/visuals/methodology-ru.svg)
 
 ### Публичный дашборд
 
