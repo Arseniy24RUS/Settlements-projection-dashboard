@@ -26,6 +26,7 @@
       <p class="subtitle">Интерактивная картограмма, фильтрация по субъектам РФ и муниципальным образованиям, динамика численности населения, рождаемости, смертности и миграции, карточка населённого пункта, половозрастные и миграционные пирамиды.</p>
     </div>
     <div class="header-actions">
+      <button type="button" class="ghost language-toggle" data-testid="language-toggle" aria-label="Переключить интерфейс на английский">EN</button>
       <button type="button" class="ghost" id="openMethodologyBtn">Методика</button>
       <button type="button" class="ghost" id="resetMapViewBtn">Сбросить вид карты</button>
     </div>
@@ -400,6 +401,7 @@
     </form>
   </dialog>
 
+  <script src="./assets/i18n.js"></script>
   <script src="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/deck.gl@8.9.36/dist.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>

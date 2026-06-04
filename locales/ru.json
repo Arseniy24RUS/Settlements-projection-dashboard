@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "title": "Населённые пункты России: прогноз численности и половозрастного состава населения"
+  },
+  "ui": {
+    "languageToggle": "EN",
+    "languageToggleLabel": "Переключить интерфейс на английский"
+  },
+  "loading": {
+    "defaultTitle": "Загрузка…",
+    "initialTitle": "Инициализация дашборда…",
+    "initialSubtitle": "Загружается конфигурация и подключается движок DuckDB-Wasm.",
+    "duckTitle": "Подключение вычислительного движка…",
+    "duckSubtitle": "Подготавливается DuckDB-Wasm для выполнения запросов непосредственно в браузере.",
+    "registerTitle": "Регистрация файлов данных…",
+    "registerSubtitle": "Подключаются локальные Parquet-файлы, предназначенные для работы на GitHub Pages.",
+    "filtersTitle": "Формирование фильтров…",
+    "filtersSubtitle": "Из таблицы населённых пунктов извлекаются перечни субъектов РФ и муниципальных образований.",
+    "refreshTitle": "Обновление дашборда…",
+    "refreshSubtitle": "Пересчитываются картографическая выборка, временные ряды и сопутствующие показатели."
+  },
+  "scenario": {
+    "withMIG": "С учётом миграции",
+    "noMIG": "Без миграции",
+    "active": "Активный сценарий: {scenario}"
+  },
+  "placeholders": {
+    "allRegions": "Все субъекты РФ",
+    "chooseRegionFirst": "Сначала выберите субъект РФ",
+    "allMunicipalities": "Все муниципальные образования выбранных субъектов РФ"
+  },
+  "hints": {
+    "municipalityDefault": "Список муниципалитетов раскрывается после выбора одного или нескольких субъектов РФ.",
+    "municipalityAvailable": "Доступно муниципалитетов: {count}."
+  },
+  "filters": {
+    "allRussia": "Вся Россия",
+    "regionsCount": "субъекты РФ: {count}",
+    "municipalitiesCount": "муниципалитеты: {count}"
+  },
+  "units": {
+    "yearShort": "{year} г.",
+    "year_one": "год",
+    "year_few": "года",
+    "year_many": "лет",
+    "yes": "Да",
+    "no": "Нет"
+  },
+  "populationClasses": {
+    "501_1000": "501–1 тыс.",
+    "1001_5000": "1–5 тыс.",
+    "5001_10000": "5–10 тыс.",
+    "10001_50000": "10–50 тыс.",
+    "50001_100000": "50–100 тыс.",
+    "100001_500000": "100–500 тыс.",
+    "500001_1000000": "500 тыс.–1 млн",
+    "1000001_5000000": "1–5 млн",
+    "5000001_plus": "> 5 млн"
+  },
+  "centralGroups": {
+    "services": "центр социальных услуг",
+    "investment": "инвестиционный центр",
+    "aggl_core": "ядро агломерации",
+    "agglomeration": "агломерационный пункт",
+    "security": "безопасность / граница",
+    "infrastructure": "критическая инфраструктура",
+    "zato": "ЗАТО",
+    "science": "наукоград",
+    "regional_capital": "центр субъекта РФ",
+    "other": "иной тип опорного пункта"
+  },
+  "centralSymbols": {
+    "services": "С",
+    "investment": "И",
+    "aggl_core": "Я",
+    "agglomeration": "А",
+    "security": "Б",
+    "infrastructure": "К",
+    "zato": "З",
+    "science": "Н",
+    "regional_capital": "Р",
+    "other": "О"
+  },
+  "chart": {
+    "actualData": "Фактические данные",
+    "forecast": "Прогноз ({scenario})",
+    "forecastColon": "Прогноз: {name} ({scenario})",
+    "population": "Население",
+    "populationTitle": "Численность населения",
+    "births": "Число рождений",
+    "birthsTitle": "Число рождений",
+    "tfr": "СКР",
+    "tfrTitle": "Суммарный коэффициент рождаемости",
+    "deaths": "Число умерших",
+    "deathsTitle": "Число умерших",
+    "cdr": "ОКС",
+    "cdrTitle": "Общий коэффициент смертности",
+    "migrationFlows": "Миграционные потоки",
+    "migIn": "приток",
+    "migOut": "отток",
+    "migNet": "сальдо",
+    "actualMigIn": "Фактический приток",
+    "actualMigOut": "Фактический отток",
+    "actualMigNet": "Фактическое сальдо",
+    "forecastMigIn": "Прогноз притока",
+    "forecastMigOut": "Прогноз оттока",
+    "forecastMigNet": "Прогноз сальдо",
+    "migrationInflowPyramid": "Половозрастная структура притока",
+    "migrationOutflowPyramid": "Половозрастная структура оттока",
+    "inflow": "Приток",
+    "outflow": "Отток",
+    "male": "Мужчины",
+    "female": "Женщины",
+    "ageGroup": "Возрастная группа",
+    "age": "Возраст",
+    "total": "Суммарно: {value} · сценарий: {scenario}",
+    "totalPopulation": "Общая численность: {value} · сценарий: {scenario}",
+    "range": "Диапазон графика: {baseYear}–{endYear}",
+    "yearAxis": "Год",
+    "countAxis": "Численность",
+    "hoverPopulation": "<b>%{x}</b><br>Население: %{y:,}<extra></extra>",
+    "hoverValue": "<b>%{x}</b><br>{label}: %{y:,}<extra></extra>",
+    "hoverRate": "<b>%{x}</b><br>{label}: %{y:.2f}<extra></extra>",
+    "hoverMale": "<b>%{y}</b><br>Мужчины: %{customdata:,}<extra></extra>",
+    "hoverFemale": "<b>%{y}</b><br>Женщины: %{x:,}<extra></extra>",
+    "hoverAgeMale": "<b>Возраст %{customdata}</b><br>Мужчины: %{text:,}<extra></extra>",
+    "hoverAgeFemale": "<b>Возраст %{customdata}</b><br>Женщины: %{x:,}<extra></extra>"
+  },
+  "empty": {
+    "currentFilters": "Нет данных для текущего набора фильтров.",
+    "timeWindow": "В пределах выбранного временного интервала данные отсутствуют.",
+    "fertilityBirths": "Нет данных по рождаемости для текущей выборки.",
+    "fertilityTfr": "Нет данных по СКР для текущей выборки.",
+    "mortalityDeaths": "Нет данных по смертности для текущей выборки.",
+    "mortalityCdr": "Нет данных по ОКС для текущей выборки.",
+    "migration": "Нет данных по миграции для текущей выборки.",
+    "migrationAge": "Для выбранной пространственной выборки возрастно-половые данные миграции отсутствуют.",
+    "migrationAgeNoMig": "В сценарии «Без миграции» приток и отток по возрастным группам по определению равны нулю. Переключите верхний сценарий на «С учётом миграции».",
+    "migrationAgeYear": "В выбранном году миграционные потоки по возрастным группам отсутствуют.",
+    "topList": "По текущему набору фильтров данных нет.",
+    "settlementChart": "Выберите населённый пункт на карте, чтобы построить его временной ряд.",
+    "pyramidSelect": "Выберите населённый пункт, чтобы рассчитать половозрастную пирамиду.",
+    "pyramidNoData": "Для выбранного пункта отсутствуют данные, необходимые для построения пирамиды.",
+    "pyramidProfile": "Для выбранного сочетания «населённый пункт — год — сценарий» муниципальный возрастно-половой профиль отсутствует."
+  },
+  "kpi": {
+    "populationNote": "Год на карте: {year} · сценарий: {scenario}",
+    "deltaNote": "Относительно {year} года",
+    "centralNote": "Официальный перечень в выборке; на карте в {year} г. видны {visible}{disabled}",
+    "centralLayerOff": " · слой отключён"
+  },
+  "map": {
+    "caption": "Год на карте: {mapYear}. Цвет: прирост численности населения {mapYear} г. к {baseYear} г.; шкала от {min} до {max}. Размер окружности отражает фиксированные классы численности населения. Фильтр: {filter}.",
+    "legendColor": "Цвет: прирост численности населения {mapYear} г. к {baseYear} г.",
+    "centralPopup": "Опорный пункт:",
+    "centralYes": "да",
+    "population": "Численность ({year}): {value}",
+    "change": "Изменение к {year} году: {value}"
+  },
+  "selected": {
+    "empty": "Населённый пункт ещё не выбран.",
+    "hintDefault": "Щёлкните по окружности на карте или выберите пункт из таблицы-лидера.",
+    "hintDetails": "Карточка показывает атрибуты выбранного населённого пункта из файла Settlement_names.csv.",
+    "typeMissing": "Тип не указан",
+    "municipalityMissing": "Муниципалитет не указан",
+    "unnamed": "Без названия",
+    "regionMissing": "Регион не указан",
+    "centralStatus": "Статус опорного пункта: <strong>{value}</strong>.",
+    "centralNotMarked": "Статус опорного пункта не отмечен.",
+    "activeScenario": "Активный сценарий карты и пирамиды: {scenario}",
+    "populationYear": "Численность ({year})",
+    "baseYear": "Базовый год ({year})",
+    "absoluteChange": "Абсолютное изменение",
+    "relativeChange": "Относительное изменение",
+    "notMarked": "не отмечен",
+    "settlementFallback": "Населённый пункт"
+  },
+  "table": {
+    "settlement": "Населённый пункт",
+    "municipality": "Муниципалитет",
+    "population": "Численность"
+  },
+  "errors": {
+    "init": "Не удалось инициализировать дашборд: {message}",
+    "config": "Не удалось загрузить конфигурацию (HTTP {status}).",
+    "mapPngBlob": "Не удалось подготовить PNG карты.",
+    "mapPng": "Не удалось сохранить карту в PNG: {message}",
+    "pngElement": "Не удалось найти элемент для экспорта PNG.",
+    "pngBlob": "Не удалось подготовить PNG.",
+    "png": "Не удалось сохранить PNG: {message}",
+    "plotPng": "Для экспорта PNG сначала нужно построить соответствующий график.",
+    "selectionEmpty": "Нет данных для экспорта: текущая выборка пуста.",
+    "aggregateMissing": "Сначала нужно построить агрегированный временной ряд.",
+    "selectSettlement": "Сначала выберите населённый пункт.",
+    "pyramidMissing": "Сначала постройте половозрастную пирамиду.",
+    "fertilityMissing": "Сначала постройте блок рождаемости.",
+    "mortalityMissing": "Сначала постройте блок смертности.",
+    "migrationMissing": "Сначала постройте блок миграции."
+  },
+  "export": {
+    "actualData": "Фактические данные",
+    "forecast": "Прогноз ({scenario})",
+    "actualMigIn": "Фактический приток",
+    "actualMigOut": "Фактический отток",
+    "actualMigNet": "Фактическое сальдо",
+    "forecastMigIn": "Прогноз притока",
+    "forecastMigOut": "Прогноз оттока",
+    "forecastMigNet": "Прогноз сальдо"
+  }
+}

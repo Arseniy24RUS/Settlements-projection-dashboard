@@ -7,17 +7,17 @@ window.__RUSSIA_SETTLEMENTS_DASHBOARD_BUILD__ = DASHBOARD_BUILD;
 const DEFAULT_MAP_VIEW = { center: [95, 63], zoom: 2.35 };
 
 const POPULATION_CLASSES = [
-  { min: 1, max: 100, label: '1–100', shortLabel: '1–100', radius: 4 },
-  { min: 101, max: 500, label: '101–500', shortLabel: '101–500', radius: 5 },
-  { min: 501, max: 1000, label: '501–1 000', shortLabel: '501–1 тыс.', radius: 6 },
-  { min: 1001, max: 5000, label: '1 001–5 000', shortLabel: '1–5 тыс.', radius: 8 },
-  { min: 5001, max: 10000, label: '5 001–10 000', shortLabel: '5–10 тыс.', radius: 10 },
-  { min: 10001, max: 50000, label: '10 001–50 000', shortLabel: '10–50 тыс.', radius: 12 },
-  { min: 50001, max: 100000, label: '50 001–100 000', shortLabel: '50–100 тыс.', radius: 14 },
-  { min: 100001, max: 500000, label: '100 001–500 000', shortLabel: '100–500 тыс.', radius: 16 },
-  { min: 500001, max: 1000000, label: '500 001–1 000 000', shortLabel: '500 тыс.–1 млн', radius: 18 },
-  { min: 1000001, max: 5000000, label: '1 000 001–5 000 000', shortLabel: '1–5 млн', radius: 22 },
-  { min: 5000001, max: Infinity, label: 'Более 5 000 001', shortLabel: '> 5 млн', radius: 26 },
+  { id: '1_100', min: 1, max: 100, label: '1–100', shortLabel: '1–100', radius: 4 },
+  { id: '101_500', min: 101, max: 500, label: '101–500', shortLabel: '101–500', radius: 5 },
+  { id: '501_1000', min: 501, max: 1000, label: '501–1 000', shortLabel: '501–1 тыс.', radius: 6 },
+  { id: '1001_5000', min: 1001, max: 5000, label: '1 001–5 000', shortLabel: '1–5 тыс.', radius: 8 },
+  { id: '5001_10000', min: 5001, max: 10000, label: '5 001–10 000', shortLabel: '5–10 тыс.', radius: 10 },
+  { id: '10001_50000', min: 10001, max: 50000, label: '10 001–50 000', shortLabel: '10–50 тыс.', radius: 12 },
+  { id: '50001_100000', min: 50001, max: 100000, label: '50 001–100 000', shortLabel: '50–100 тыс.', radius: 14 },
+  { id: '100001_500000', min: 100001, max: 500000, label: '100 001–500 000', shortLabel: '100–500 тыс.', radius: 16 },
+  { id: '500001_1000000', min: 500001, max: 1000000, label: '500 001–1 000 000', shortLabel: '500 тыс.–1 млн', radius: 18 },
+  { id: '1000001_5000000', min: 1000001, max: 5000000, label: '1 000 001–5 000 000', shortLabel: '1–5 млн', radius: 22 },
+  { id: '5000001_plus', min: 5000001, max: Infinity, label: 'Более 5 000 001', shortLabel: '> 5 млн', radius: 26 },
 ];
 
 const SCENARIO_TRACE_STYLES = {
@@ -39,6 +39,66 @@ const CENTRAL_PLACE_GROUPS = [
 ];
 
 const CENTRAL_GROUP_BY_ID = new Map(CENTRAL_PLACE_GROUPS.map((item) => [item.id, item]));
+
+function appI18n() {
+  return window.AppI18n || null;
+}
+
+function t(key, params = {}, fallback = key) {
+  return appI18n()?.t?.(key, params, fallback) ?? interpolateFallback(fallback, params);
+}
+
+function interpolateFallback(value, params = {}) {
+  if (typeof value !== 'string') return value;
+  return value.replace(/\{(\w+)\}/g, (_, key) => (
+    Object.prototype.hasOwnProperty.call(params, key) ? String(params[key]) : `{${key}}`
+  ));
+}
+
+function currentLanguage() {
+  return appI18n()?.getLanguage?.() || 'ru';
+}
+
+function numberLocale() {
+  return currentLanguage() === 'ru' ? 'ru-RU' : 'en-US';
+}
+
+function translateRegionName(value) {
+  if (isBlank(value)) return value;
+  const source = String(value);
+  return t(`regions.${source}`, {}, source);
+}
+
+function translateFederalDistrictName(value) {
+  if (isBlank(value)) return value;
+  const source = String(value);
+  return t(`federalDistricts.${source}`, {}, source);
+}
+
+function formatGeoFieldValue(field, value) {
+  const normalized = String(field || '').toLowerCase();
+  if (normalized === 'region' || normalized.includes('регион') || normalized.includes('субъект')) {
+    return translateRegionName(value);
+  }
+  if (normalized.includes('federal') || normalized.includes('федераль')) {
+    return translateFederalDistrictName(value);
+  }
+  return formatAny(value);
+}
+
+function getCentralGroupLabel(id) {
+  const fallback = CENTRAL_GROUP_BY_ID.get(id)?.label || id;
+  return t(`centralGroups.${id}`, {}, fallback);
+}
+
+function getCentralGroupSymbol(id) {
+  const fallback = CENTRAL_GROUP_BY_ID.get(id)?.symbol || '';
+  return t(`centralSymbols.${id}`, {}, fallback);
+}
+
+function getPopulationClassShortLabel(item) {
+  return t(`populationClasses.${item.id}`, {}, item.shortLabel);
+}
 
 const els = {
   scenarioButtons: document.getElementById('scenarioButtons'),
@@ -155,15 +215,18 @@ const state = {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-  init().catch((error) => {
+  (async () => {
+    await appI18n()?.ready;
+    await init();
+  })().catch((error) => {
     console.error(error);
-    showError(`Не удалось инициализировать дашборд: ${error?.message || error}`);
+    showError(t('errors.init', { message: error?.message || error }));
     setLoading(false);
   });
 });
 
 async function init() {
-  setLoading(true, 'Инициализация дашборда…', 'Загружается конфигурация и подключается движок DuckDB-Wasm.');
+  setLoading(true, t('loading.initialTitle'), t('loading.initialSubtitle'));
   await loadConfig();
   initControls();
   bindEvents();
@@ -175,12 +238,14 @@ async function init() {
   await state.ui.mapReady;
   await refreshAll();
   setLoading(false);
+  window.__SETTLEMENTS_APP_READY__ = true;
+  window.dispatchEvent(new Event('settlements-dashboard:ready'));
 }
 
 async function loadConfig() {
   const response = await fetch('./data/config.json');
   if (!response.ok) {
-    throw new Error(`Не удалось загрузить конфигурацию (HTTP ${response.status}).`);
+    throw new Error(t('errors.config', { status: response.status }));
   }
   state.config = await response.json();
   state.config.allYears = [...new Set([...state.config.censusYears, ...state.config.forecastYears])].sort((a, b) => a - b);
@@ -252,7 +317,7 @@ function initControls() {
     create: false,
     persist: false,
     closeAfterSelect: false,
-    placeholder: 'Все субъекты РФ',
+    placeholder: t('placeholders.allRegions'),
   });
 
   state.ui.municipalityTom = new TomSelect(els.municipalitySelect, {
@@ -262,7 +327,7 @@ function initControls() {
     create: false,
     persist: false,
     closeAfterSelect: false,
-    placeholder: 'Сначала выберите субъект РФ',
+    placeholder: t('placeholders.chooseRegionFirst'),
   });
   state.ui.municipalityTom.disable();
   state.ui.municipalityTom.inputState();
@@ -329,6 +394,7 @@ function bindEvents() {
   els.exportMortalityXlsxBtn.addEventListener('click', () => exportMortalityXlsx());
   els.exportMigrationPngBtn.addEventListener('click', () => exportElementPng('migrationBlock', buildFilename('migration')));
   els.exportMigrationXlsxBtn.addEventListener('click', () => exportMigrationXlsx());
+  window.addEventListener('app:i18n:change', () => rerenderLocalizedUi());
 }
 
 
@@ -425,7 +491,7 @@ function syncScenarioCheckboxGroupToActive(firstEl, secondEl, activeScenarioId) 
 
 function renderScenarioButtons() {
   els.scenarioButtons.innerHTML = state.config.scenarios.map((scenario) => `
-    <button type="button" data-scenario="${escapeHtml(scenario.id)}" class="${scenario.id === state.ui.activeScenario ? 'active' : ''}">${escapeHtml(scenario.label)}</button>
+    <button type="button" data-scenario="${escapeHtml(scenario.id)}" class="${scenario.id === state.ui.activeScenario ? 'active' : ''}">${escapeHtml(getScenarioLabel(scenario.id))}</button>
   `).join('');
 }
 
@@ -434,7 +500,7 @@ function updateTimelineReadout() {
   els.baseYearDisplay.textContent = formatAny(baseYear);
   els.chartEndDisplay.textContent = formatAny(chartEndYear);
   const span = Math.max(0, chartEndYear - baseYear);
-  els.chartSpanDisplay.textContent = `${span.toLocaleString('ru-RU')} ${pluralYears(span)}`;
+  els.chartSpanDisplay.textContent = `${span.toLocaleString(numberLocale())} ${pluralYears(span)}`;
 }
 
 function updateMapYearReadout() {
@@ -451,11 +517,11 @@ function updateMigrationYearReadout() {
 
 function updateMigrationScenarioNote() {
   if (!els.migrationScenarioNote) return;
-  els.migrationScenarioNote.textContent = `Активный сценарий: ${getScenarioLabel(getScenario())}`;
+  els.migrationScenarioNote.textContent = t('scenario.active', { scenario: getScenarioLabel(getScenario()) });
 }
 
 async function initDuckDB() {
-  setLoading(true, 'Подключение вычислительного движка…', 'Подготавливается DuckDB-Wasm для выполнения запросов непосредственно в браузере.');
+  setLoading(true, t('loading.duckTitle'), t('loading.duckSubtitle'));
   const bundles = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle(bundles);
   const workerUrl = URL.createObjectURL(
@@ -470,7 +536,7 @@ async function initDuckDB() {
 }
 
 async function prepareTables() {
-  setLoading(true, 'Регистрация файлов данных…', 'Подключаются локальные Parquet-файлы, предназначенные для работы на GitHub Pages.');
+  setLoading(true, t('loading.registerTitle'), t('loading.registerSubtitle'));
   await ensureRegisteredFile('settlement_index.parquet', './data/settlement_index.parquet');
   await ensureRegisteredFile('settlement_details.parquet', './data/settlement_details.parquet');
   await ensureRegisteredFile('settlement_forecast_wide_withMIG.parquet', './data/settlement_forecast_wide_withMIG.parquet');
@@ -548,7 +614,7 @@ async function loadCentralPlaceRepresentatives() {
 
 
 async function loadFilterOptions() {
-  setLoading(true, 'Формирование фильтров…', 'Из таблицы населённых пунктов извлекаются перечни субъектов РФ и муниципальных образований.');
+  setLoading(true, t('loading.filtersTitle'), t('loading.filtersSubtitle'));
   const regionRows = await queryRows(`
     SELECT DISTINCT Region
     FROM settlement_index
@@ -579,7 +645,7 @@ async function loadFilterOptions() {
   }
 
   state.ui.regionTom.clearOptions();
-  state.ui.regionTom.addOptions(state.filterOptions.regions.map((region) => ({ value: region, text: region })));
+  state.ui.regionTom.addOptions(state.filterOptions.regions.map((region) => ({ value: region, text: translateRegionName(region) })));
   state.ui.regionTom.settings.maxOptions = Math.max(5000, state.filterOptions.regions.length + 10);
   state.ui.regionTom.refreshOptions(false);
   updateMunicipalityOptions();
@@ -594,11 +660,11 @@ function updateMunicipalityOptions() {
   if (!selectedRegions.length) {
     state.ui.municipalityTom.clear(true);
     state.ui.municipalityTom.clearOptions();
-    state.ui.municipalityTom.settings.placeholder = 'Сначала выберите субъект РФ';
+    state.ui.municipalityTom.settings.placeholder = t('placeholders.chooseRegionFirst');
     state.ui.municipalityTom.disable();
     state.ui.municipalityTom.inputState();
     if (els.municipalityHint) {
-      els.municipalityHint.textContent = 'Список муниципалитетов раскрывается после выбора одного или нескольких субъектов РФ.';
+      els.municipalityHint.textContent = t('hints.municipalityDefault');
     }
     return;
   }
@@ -616,10 +682,10 @@ function updateMunicipalityOptions() {
   state.ui.municipalityTom.clearOptions();
   state.ui.municipalityTom.addOptions(options.map((row) => ({
     value: `${row.Region}|||${row.Municipality}`,
-    text: `${row.Municipality} — ${row.Region}`,
+    text: `${row.Municipality} — ${translateRegionName(row.Region)}`,
   })));
   state.ui.municipalityTom.settings.maxOptions = Math.max(50000, options.length + 10);
-  state.ui.municipalityTom.settings.placeholder = 'Все муниципальные образования выбранных субъектов РФ';
+  state.ui.municipalityTom.settings.placeholder = t('placeholders.allMunicipalities');
 
   const stillValid = [...selectedMunicipalities].filter((municipalityKey) =>
     options.some((row) => `${row.Region}|||${row.Municipality}` === municipalityKey));
@@ -628,7 +694,7 @@ function updateMunicipalityOptions() {
   state.ui.municipalityTom.refreshOptions(false);
 
   if (els.municipalityHint) {
-    els.municipalityHint.textContent = `Доступно муниципалитетов: ${formatInteger(options.length)}.`;
+    els.municipalityHint.textContent = t('hints.municipalityAvailable', { count: formatInteger(options.length) });
   }
 }
 
@@ -715,10 +781,73 @@ function clearFilters(applyFitBounds = true) {
   scheduleRefresh();
 }
 
+function refreshRegionOptions() {
+  if (!state.ui.regionTom) return;
+  const selectedRegions = normalizeMultiValue(state.ui.regionTom.getValue());
+  state.ui.regionTom.settings.placeholder = t('placeholders.allRegions');
+  state.ui.regionTom.clearOptions();
+  state.ui.regionTom.addOptions(state.filterOptions.regions.map((region) => ({
+    value: region,
+    text: translateRegionName(region),
+  })));
+  state.ui.regionTom.setValue(selectedRegions, true);
+  state.ui.regionTom.refreshOptions(false);
+  state.ui.regionTom.refreshItems();
+  state.ui.regionTom.inputState();
+}
+
+function relabelCurrentMapData() {
+  state.currentMapData = state.currentMapData.map((row) => {
+    if (!row.central_group_id) return row;
+    return {
+      ...row,
+      central_symbol: getCentralGroupSymbol(row.central_group_id),
+      central_group_label: getCentralGroupLabel(row.central_group_id),
+    };
+  });
+}
+
+function rerenderLocalizedUi() {
+  appI18n()?.apply?.(document);
+  if (!state.config) return;
+
+  refreshRegionOptions();
+  updateMunicipalityOptions();
+  renderScenarioButtons();
+  updateTimelineReadout();
+  updateMapYearReadout();
+  updatePyramidYearReadout();
+  updateMigrationYearReadout();
+  updateMigrationScenarioNote();
+  renderSizeLegend();
+  renderCentralTypeLegend();
+  renderMapLegend();
+  relabelCurrentMapData();
+
+  if (state.currentMapData.length) {
+    renderMapCaption();
+    renderKpis();
+    renderTopList();
+    updateMapLayers();
+  }
+
+  renderAggregateChart();
+  renderFertilityBlock();
+  renderMortalityBlock();
+  renderMigrationBlock();
+  if (state.currentMigrationAgeBundle) {
+    renderMigrationAgePyramidChart('migrationInflowPyramidChart', state.currentMigrationAgeBundle.rows, 'inflow', t('chart.migrationInflowPyramid'), state.currentMigrationAgeBundle.scenario);
+    renderMigrationAgePyramidChart('migrationOutflowPyramidChart', state.currentMigrationAgeBundle.rows, 'outflow', t('chart.migrationOutflowPyramid'), state.currentMigrationAgeBundle.scenario);
+  }
+  renderSelectedSettlementCard();
+  renderSelectedSettlementChart();
+  renderPyramid().catch(handleError);
+}
+
 async function refreshAll() {
   const token = ++state.ui.refreshToken;
   clearError();
-  setLoading(true, 'Обновление дашборда…', 'Пересчитываются картографическая выборка, временные ряды и сопутствующие показатели.');
+  setLoading(true, t('loading.refreshTitle'), t('loading.refreshSubtitle'));
 
   const mapData = await loadCurrentMapData();
   if (token !== state.ui.refreshToken) return;
@@ -813,8 +942,8 @@ async function loadCurrentMapData() {
         is_central_place: Boolean(row.is_central_place),
         Central_places: row.Central_places,
         central_group_id: centralMeta?.id || null,
-        central_symbol: centralMeta?.symbol || null,
-        central_group_label: centralMeta?.label || null,
+        central_symbol: centralMeta?.id ? getCentralGroupSymbol(centralMeta.id) : null,
+        central_group_label: centralMeta?.id ? getCentralGroupLabel(centralMeta.id) : null,
         pop,
         base_pop: basePop,
         delta_abs: deltaAbs,
@@ -981,7 +1110,7 @@ async function loadComponentSeries() {
 
 function renderAggregateChart() {
   if (!state.currentAggregateSeries) {
-    renderEmptyPlot('aggregateChart', 'Нет данных для текущего набора фильтров.');
+    renderEmptyPlot('aggregateChart', t('empty.currentFilters'));
     return;
   }
 
@@ -993,10 +1122,10 @@ function renderAggregateChart() {
       y: actualSeries.y,
       type: 'scatter',
       mode: 'lines+markers',
-      name: 'Фактические данные',
+      name: t('chart.actualData'),
       line: { color: '#1d4ed8', width: 3 },
       marker: { color: '#1d4ed8', size: 9 },
-      hovertemplate: '<b>%{x}</b><br>Население: %{y:,}<extra></extra>',
+      hovertemplate: t('chart.hoverPopulation'),
     });
   }
 
@@ -1010,18 +1139,18 @@ function renderAggregateChart() {
       y: filtered.y,
       type: 'scatter',
       mode: 'lines',
-      name: `Прогноз (${getScenarioLabel(scenarioId)})`,
+      name: t('chart.forecast', { scenario: getScenarioLabel(scenarioId) }),
       line: { color: style.color, width: 3, dash: style.dash },
-      hovertemplate: '<b>%{x}</b><br>Население: %{y:,}<extra></extra>',
+      hovertemplate: t('chart.hoverPopulation'),
     });
   }
 
   if (!traces.length) {
-    renderEmptyPlot('aggregateChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('aggregateChart', t('empty.timeWindow'));
     return;
   }
 
-  const layout = buildLineLayout('Численность населения', describeCurrentFilter());
+  const layout = buildLineLayout(t('chart.populationTitle'), describeCurrentFilter());
   Plotly.newPlot('aggregateChart', traces, layout, buildPlotConfig(buildFilename('aggregate')));
 }
 
@@ -1038,8 +1167,8 @@ function buildActualForecastTraces({ actualYears, actualValues, forecastSeriesBy
       line: { color: '#1d4ed8', width: 3 },
       marker: { color: '#1d4ed8', size: 8 },
       hovertemplate: rateMode
-        ? `<b>%{x}</b><br>${yLabel}: %{y:.2f}<extra></extra>`
-        : `<b>%{x}</b><br>${yLabel}: %{y:,}<extra></extra>`,
+        ? t('chart.hoverRate', { label: yLabel })
+        : t('chart.hoverValue', { label: yLabel }),
     });
   }
 
@@ -1053,11 +1182,11 @@ function buildActualForecastTraces({ actualYears, actualValues, forecastSeriesBy
       y: filtered.y,
       type: 'scatter',
       mode: 'lines',
-      name: `Прогноз (${getScenarioLabel(scenarioId)})`,
+      name: t('chart.forecast', { scenario: getScenarioLabel(scenarioId) }),
       line: { color: style.color, width: 3, dash: style.dash },
       hovertemplate: rateMode
-        ? `<b>%{x}</b><br>${yLabel}: %{y:.2f}<extra></extra>`
-        : `<b>%{x}</b><br>${yLabel}: %{y:,}<extra></extra>`,
+        ? t('chart.hoverRate', { label: yLabel })
+        : t('chart.hoverValue', { label: yLabel }),
     });
   }
   return traces;
@@ -1066,8 +1195,8 @@ function buildActualForecastTraces({ actualYears, actualValues, forecastSeriesBy
 function renderFertilityBlock() {
   const bundle = state.currentComponentSeries?.fertility;
   if (!bundle) {
-    renderEmptyPlot('fertilityBirthsChart', 'Нет данных по рождаемости для текущей выборки.');
-    renderEmptyPlot('fertilityTfrChart', 'Нет данных по СКР для текущей выборки.');
+    renderEmptyPlot('fertilityBirthsChart', t('empty.fertilityBirths'));
+    renderEmptyPlot('fertilityTfrChart', t('empty.fertilityTfr'));
     return;
   }
 
@@ -1080,16 +1209,16 @@ function renderFertilityBlock() {
     actualValues: bundle.birthsActual,
     forecastSeriesByScenario: birthsForecast,
     selectedScenarios,
-    actualName: 'Фактические данные',
-    yLabel: 'Число рождений',
+    actualName: t('chart.actualData'),
+    yLabel: t('chart.births'),
     rateMode: false,
   });
   if (birthsTraces.length) {
-    const layout = buildLineLayout('Число рождений', describeCurrentFilter());
+    const layout = buildLineLayout(t('chart.birthsTitle'), describeCurrentFilter());
     layout.yaxis.tickformat = ',d';
     Plotly.newPlot('fertilityBirthsChart', birthsTraces, layout, buildPlotConfig(buildFilename('fertility_births')));
   } else {
-    renderEmptyPlot('fertilityBirthsChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('fertilityBirthsChart', t('empty.timeWindow'));
   }
 
   const tfrTraces = buildActualForecastTraces({
@@ -1097,24 +1226,24 @@ function renderFertilityBlock() {
     actualValues: bundle.tfrActual,
     forecastSeriesByScenario: tfrForecast,
     selectedScenarios,
-    actualName: 'Фактические данные',
-    yLabel: 'СКР',
+    actualName: t('chart.actualData'),
+    yLabel: t('chart.tfr'),
     rateMode: true,
   });
   if (tfrTraces.length) {
-    const layout = buildLineLayout('Суммарный коэффициент рождаемости', describeCurrentFilter());
+    const layout = buildLineLayout(t('chart.tfrTitle'), describeCurrentFilter());
     delete layout.yaxis.tickformat;
     Plotly.newPlot('fertilityTfrChart', tfrTraces, layout, buildPlotConfig(buildFilename('fertility_tfr')));
   } else {
-    renderEmptyPlot('fertilityTfrChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('fertilityTfrChart', t('empty.timeWindow'));
   }
 }
 
 function renderMortalityBlock() {
   const bundle = state.currentComponentSeries?.mortality;
   if (!bundle) {
-    renderEmptyPlot('mortalityDeathsChart', 'Нет данных по смертности для текущей выборки.');
-    renderEmptyPlot('mortalityCdrChart', 'Нет данных по ОКС для текущей выборки.');
+    renderEmptyPlot('mortalityDeathsChart', t('empty.mortalityDeaths'));
+    renderEmptyPlot('mortalityCdrChart', t('empty.mortalityCdr'));
     return;
   }
 
@@ -1127,16 +1256,16 @@ function renderMortalityBlock() {
     actualValues: bundle.deathsActual,
     forecastSeriesByScenario: deathsForecast,
     selectedScenarios,
-    actualName: 'Фактические данные',
-    yLabel: 'Число умерших',
+    actualName: t('chart.actualData'),
+    yLabel: t('chart.deaths'),
     rateMode: false,
   });
   if (deathsTraces.length) {
-    const layout = buildLineLayout('Число умерших', describeCurrentFilter());
+    const layout = buildLineLayout(t('chart.deathsTitle'), describeCurrentFilter());
     layout.yaxis.tickformat = ',d';
     Plotly.newPlot('mortalityDeathsChart', deathsTraces, layout, buildPlotConfig(buildFilename('mortality_deaths')));
   } else {
-    renderEmptyPlot('mortalityDeathsChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('mortalityDeathsChart', t('empty.timeWindow'));
   }
 
   const cdrTraces = buildActualForecastTraces({
@@ -1144,31 +1273,31 @@ function renderMortalityBlock() {
     actualValues: bundle.cdrActual,
     forecastSeriesByScenario: cdrForecast,
     selectedScenarios,
-    actualName: 'Фактические данные',
-    yLabel: 'ОКС',
+    actualName: t('chart.actualData'),
+    yLabel: t('chart.cdr'),
     rateMode: true,
   });
   if (cdrTraces.length) {
-    const layout = buildLineLayout('Общий коэффициент смертности', describeCurrentFilter());
+    const layout = buildLineLayout(t('chart.cdrTitle'), describeCurrentFilter());
     delete layout.yaxis.tickformat;
     Plotly.newPlot('mortalityCdrChart', cdrTraces, layout, buildPlotConfig(buildFilename('mortality_cdr')));
   } else {
-    renderEmptyPlot('mortalityCdrChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('mortalityCdrChart', t('empty.timeWindow'));
   }
 }
 
 function renderMigrationBlock() {
   const bundle = state.currentComponentSeries?.migration;
   if (!bundle) {
-    renderEmptyPlot('migrationTotalsChart', 'Нет данных по миграции для текущей выборки.');
+    renderEmptyPlot('migrationTotalsChart', t('empty.migration'));
     return;
   }
 
   const selectedScenarios = getSelectedChartScenarios('migration');
   const measureMeta = [
-    { key: 'migIn', actualValues: bundle.migInActual, forecastKey: 'migIn', actualName: 'Фактический приток', colorActual: '#1d4ed8', colorForecast: '#60a5fa' },
-    { key: 'migOut', actualValues: bundle.migOutActual, forecastKey: 'migOut', actualName: 'Фактический отток', colorActual: '#7c3aed', colorForecast: '#c084fc' },
-    { key: 'migNet', actualValues: bundle.migNetActual, forecastKey: 'migNet', actualName: 'Фактическое сальдо', colorActual: '#0f766e', colorForecast: '#34d399' },
+    { key: 'migIn', actualValues: bundle.migInActual, forecastKey: 'migIn', actualName: t('chart.actualMigIn'), baseName: t('chart.migIn'), colorActual: '#1d4ed8', colorForecast: '#60a5fa' },
+    { key: 'migOut', actualValues: bundle.migOutActual, forecastKey: 'migOut', actualName: t('chart.actualMigOut'), baseName: t('chart.migOut'), colorActual: '#7c3aed', colorForecast: '#c084fc' },
+    { key: 'migNet', actualValues: bundle.migNetActual, forecastKey: 'migNet', actualName: t('chart.actualMigNet'), baseName: t('chart.migNet'), colorActual: '#0f766e', colorForecast: '#34d399' },
   ];
 
   const traces = [];
@@ -1183,7 +1312,7 @@ function renderMigrationBlock() {
         name: meta.actualName,
         line: { color: meta.colorActual, width: 3 },
         marker: { color: meta.colorActual, size: 7 },
-        hovertemplate: `<b>%{x}</b><br>${meta.actualName.replace('Фактический ', '').replace('Фактическое ', '')}: %{y:,}<extra></extra>`,
+        hovertemplate: t('chart.hoverValue', { label: meta.baseName }),
       });
     }
   });
@@ -1194,25 +1323,24 @@ function renderMigrationBlock() {
     measureMeta.forEach((meta) => {
       const filtered = filterSeriesToWindow(forecastData?.years || [], forecastData?.[meta.forecastKey] || []);
       if (!filtered.x.length) return;
-      const baseName = meta.actualName.replace('Фактический ', '').replace('Фактическое ', '');
       traces.push({
         x: filtered.x,
         y: filtered.y,
         type: 'scatter',
         mode: 'lines',
-        name: `Прогноз: ${baseName} (${getScenarioLabel(scenarioId)})`,
+        name: t('chart.forecastColon', { name: meta.baseName, scenario: getScenarioLabel(scenarioId) }),
         line: { color: meta.colorForecast, width: 2.8, dash: style.dash },
-        hovertemplate: `<b>%{x}</b><br>${baseName}: %{y:,}<extra></extra>`,
+        hovertemplate: t('chart.hoverValue', { label: meta.baseName }),
       });
     });
   });
 
   if (!traces.length) {
-    renderEmptyPlot('migrationTotalsChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('migrationTotalsChart', t('empty.timeWindow'));
     return;
   }
 
-  const layout = buildLineLayout('Миграционные потоки', describeCurrentFilter());
+  const layout = buildLineLayout(t('chart.migrationFlows'), describeCurrentFilter());
   layout.yaxis.tickformat = ',d';
   Plotly.newPlot('migrationTotalsChart', traces, layout, buildPlotConfig(buildFilename('migration_totals')));
 }
@@ -1276,19 +1404,19 @@ function renderMigrationAgePyramids() {
 
     state.currentMigrationAgeBundle = { year, scenario, rows: cleanedRows };
 
-    renderMigrationAgePyramidChart('migrationInflowPyramidChart', cleanedRows, 'inflow', 'Половозрастная структура притока', scenario);
-    renderMigrationAgePyramidChart('migrationOutflowPyramidChart', cleanedRows, 'outflow', 'Половозрастная структура оттока', scenario);
+    renderMigrationAgePyramidChart('migrationInflowPyramidChart', cleanedRows, 'inflow', t('chart.migrationInflowPyramid'), scenario);
+    renderMigrationAgePyramidChart('migrationOutflowPyramidChart', cleanedRows, 'outflow', t('chart.migrationOutflowPyramid'), scenario);
   })();
 }
 
 function renderMigrationAgePyramidChart(containerId, rows, metric, title, scenario = getScenario()) {
   if (!rows.length) {
-    renderEmptyPlot(containerId, 'Для выбранной пространственной выборки возрастно-половые данные миграции отсутствуют.');
+    renderEmptyPlot(containerId, t('empty.migrationAge'));
     return;
   }
   const totalMetric = rows.reduce((sum, row) => sum + (toNumber(row[metric]) || 0), 0);
   if (!Number.isFinite(totalMetric) || totalMetric <= 0) {
-    const emptyMessage = scenario === 'noMIG' ? 'В сценарии «Без миграции» приток и отток по возрастным группам по определению равны нулю. Переключите верхний сценарий на «С учётом миграции».' : 'В выбранном году миграционные потоки по возрастным группам отсутствуют.';
+    const emptyMessage = scenario === 'noMIG' ? t('empty.migrationAgeNoMig') : t('empty.migrationAgeYear');
     renderEmptyPlot(containerId, emptyMessage);
     return;
   }
@@ -1296,7 +1424,7 @@ function renderMigrationAgePyramidChart(containerId, rows, metric, title, scenar
   const ages = buildAgeBandCategoryArray(rows);
   const male = ages.map((age) => -1 * (rows.find((row) => row.age_band === age && String(row.sex).toLowerCase().startsWith('м'))?.[metric] || 0));
   const female = ages.map((age) => rows.find((row) => row.age_band === age && !String(row.sex).toLowerCase().startsWith('м'))?.[metric] || 0);
-  const metricLabel = metric === 'inflow' ? 'Приток' : 'Отток';
+  const metricLabel = metric === 'inflow' ? t('chart.inflow') : t('chart.outflow');
 
   const traces = [
     {
@@ -1304,9 +1432,9 @@ function renderMigrationAgePyramidChart(containerId, rows, metric, title, scenar
       y: ages,
       type: 'bar',
       orientation: 'h',
-      name: 'Мужчины',
+      name: t('chart.male'),
       marker: { color: '#2563eb' },
-      hovertemplate: `<b>%{y}</b><br>Мужчины: %{customdata:,}<extra></extra>`,
+      hovertemplate: t('chart.hoverMale'),
       customdata: male.map((value) => Math.abs(value)),
     },
     {
@@ -1314,9 +1442,9 @@ function renderMigrationAgePyramidChart(containerId, rows, metric, title, scenar
       y: ages,
       type: 'bar',
       orientation: 'h',
-      name: 'Женщины',
+      name: t('chart.female'),
       marker: { color: '#ec4899' },
-      hovertemplate: `<b>%{y}</b><br>Женщины: %{x:,}<extra></extra>`,
+      hovertemplate: t('chart.hoverFemale'),
     },
   ];
 
@@ -1342,14 +1470,14 @@ function renderMigrationAgePyramidChart(containerId, rows, metric, title, scenar
       tickformat: ',d',
     },
     yaxis: {
-      title: 'Возрастная группа',
+      title: t('chart.ageGroup'),
       categoryorder: 'array',
       categoryarray: ages,
       gridcolor: '#f1f5f9',
     },
     annotations: [
       {
-        text: `Суммарно: ${formatInteger(totalMetric)} · сценарий: ${getScenarioLabel(getScenario())}`,
+        text: t('chart.total', { value: formatInteger(totalMetric), scenario: getScenarioLabel(getScenario()) }),
         xref: 'paper',
         yref: 'paper',
         x: 0,
@@ -1372,14 +1500,14 @@ function renderTopList() {
     .slice(0, 25);
 
   if (!rows.length) {
-    els.topSettlements.innerHTML = '<div class="selection-summary empty-state">По текущему набору фильтров данных нет.</div>';
+    els.topSettlements.innerHTML = `<div class="selection-summary empty-state">${escapeHtml(t('empty.topList'))}</div>`;
     return;
   }
 
   const tableRows = rows.map((row, index) => `
     <tr data-settlement-id="${row.settlement_id}">
       <td class="rank">${index + 1}</td>
-      <td>${escapeHtml(row.Settlement_full_name || row.Settlement_name || 'Без названия')}</td>
+      <td>${escapeHtml(row.Settlement_full_name || row.Settlement_name || t('selected.unnamed'))}</td>
       <td>${escapeHtml(row.Municipality || '—')}</td>
       <td>${formatInteger(row.pop)}</td>
       <td>${formatPct(row.delta_pct)}</td>
@@ -1391,9 +1519,9 @@ function renderTopList() {
       <thead>
         <tr>
           <th>№</th>
-          <th>Населённый пункт</th>
-          <th>Муниципалитет</th>
-          <th>Численность</th>
+          <th>${escapeHtml(t('table.settlement'))}</th>
+          <th>${escapeHtml(t('table.municipality'))}</th>
+          <th>${escapeHtml(t('table.population'))}</th>
           <th>Δ, %</th>
         </tr>
       </thead>
@@ -1422,11 +1550,15 @@ function renderKpis() {
   els.kpiSettlements.textContent = formatInteger(settlements);
   els.kpiFilterNote.textContent = describeCurrentFilter();
   els.kpiPopulation.textContent = formatInteger(totalPopulation);
-  els.kpiPopulationNote.textContent = `Год на карте: ${getMapYear()} · сценарий: ${getScenarioLabel(getScenario())}`;
+  els.kpiPopulationNote.textContent = t('kpi.populationNote', { year: getMapYear(), scenario: getScenarioLabel(getScenario()) });
   els.kpiDelta.textContent = formatPct(avgDelta);
-  els.kpiDeltaNote.textContent = `Относительно ${getBaseYear()} года`;
+  els.kpiDeltaNote.textContent = t('kpi.deltaNote', { year: getBaseYear() });
   els.kpiCentral.textContent = formatInteger(centralTotalCount);
-  els.kpiCentralNote.textContent = `Официальный перечень в выборке; на карте в ${getMapYear()} г. видны ${formatInteger(centralVisibleCount)}${els.centralPlacesToggle.checked ? '' : ' · слой отключён'}`;
+  els.kpiCentralNote.textContent = t('kpi.centralNote', {
+    year: getMapYear(),
+    visible: formatInteger(centralVisibleCount),
+    disabled: els.centralPlacesToggle.checked ? '' : t('kpi.centralLayerOff'),
+  });
 }
 
 function renderMapCaption() {
@@ -1434,12 +1566,18 @@ function renderMapCaption() {
   const baseYear = getBaseYear();
   const min = getColorNegativeThreshold();
   const max = getColorPositiveThreshold();
-  els.mapCaption.textContent = `Год на карте: ${mapYear}. Цвет: прирост численности населения ${mapYear} г. к ${baseYear} г.; шкала от ${formatSignedPctThreshold(min)} до ${formatSignedPctThreshold(max)}. Размер окружности отражает фиксированные классы численности населения. Фильтр: ${describeCurrentFilter()}.`;
+  els.mapCaption.textContent = t('map.caption', {
+    mapYear,
+    baseYear,
+    min: formatSignedPctThreshold(min),
+    max: formatSignedPctThreshold(max),
+    filter: describeCurrentFilter(),
+  });
   renderMapLegend();
 }
 
 function renderMapLegend() {
-  els.mapColorLegendTitle.textContent = `Цвет: прирост численности населения ${getMapYear()} г. к ${getBaseYear()} г.`;
+  els.mapColorLegendTitle.textContent = t('map.legendColor', { mapYear: getMapYear(), baseYear: getBaseYear() });
   els.mapColorLegendLabels.innerHTML = `
     <span>${formatSignedPctThreshold(getColorNegativeThreshold())}</span>
     <span>0%</span>
@@ -1453,7 +1591,7 @@ function renderSizeLegend() {
     return `
       <div class="size-legend-item">
         <span class="size-legend-bubble" style="width:${size}px;height:${size}px;"></span>
-        <span>${escapeHtml(item.shortLabel)}</span>
+        <span>${escapeHtml(getPopulationClassShortLabel(item))}</span>
       </div>
     `;
   }).join('');
@@ -1463,8 +1601,8 @@ function renderCentralTypeLegend() {
   const visibleGroups = CENTRAL_PLACE_GROUPS.filter((item) => item.id !== 'other');
   els.centralTypeLegend.innerHTML = visibleGroups.map((item) => `
     <div class="central-legend-item">
-      <span class="central-outline-demo">${escapeHtml(item.symbol)}</span>
-      <span><span class="legend-emphasis">${escapeHtml(item.symbol)}</span> — ${escapeHtml(item.label)}</span>
+      <span class="central-outline-demo">${escapeHtml(getCentralGroupSymbol(item.id))}</span>
+      <span><span class="legend-emphasis">${escapeHtml(getCentralGroupSymbol(item.id))}</span> — ${escapeHtml(getCentralGroupLabel(item.id))}</span>
     </div>
   `).join('');
 }
@@ -1550,16 +1688,16 @@ function handleMapHover(info) {
   }
 
   const centralLine = object.is_central_place
-    ? `<br><span class="popup-emph">Опорный пункт:</span> ${escapeHtml(object.central_group_label || 'да')}`
+    ? `<br><span class="popup-emph">${escapeHtml(t('map.centralPopup'))}</span> ${escapeHtml(object.central_group_label || t('map.centralYes'))}`
     : '';
 
   const html = `
     <div class="popup-card">
-      <strong>${escapeHtml(object.Settlement_full_name || object.Settlement_name || 'Населённый пункт')}</strong><br>
+      <strong>${escapeHtml(object.Settlement_full_name || object.Settlement_name || t('selected.settlementFallback'))}</strong><br>
       ${escapeHtml(object.Type_settlement || '')}${object.Type_settlement ? ' · ' : ''}${escapeHtml(object.Municipality || '')}<br>
-      ${escapeHtml(object.Region || '')}<br>
-      <span>Численность (${getMapYear()}): ${formatInteger(object.pop)}</span><br>
-      <span>Изменение к ${getBaseYear()} году: ${formatPct(object.delta_pct)}</span>${centralLine}
+      ${escapeHtml(translateRegionName(object.Region) || '')}<br>
+      <span>${escapeHtml(t('map.population', { year: getMapYear(), value: formatInteger(object.pop) }))}</span><br>
+      <span>${escapeHtml(t('map.change', { year: getBaseYear(), value: formatPct(object.delta_pct) }))}</span>${centralLine}
     </div>
   `;
   state.ui.hoverPopup
@@ -1690,9 +1828,9 @@ function renderSelectedSettlementCard() {
   const summary = state.currentSelectionBundle;
   if (!summary?.details) {
     els.selectedSettlementSummary.className = 'selection-summary empty-state';
-    els.selectedSettlementSummary.textContent = 'Населённый пункт ещё не выбран.';
+    els.selectedSettlementSummary.textContent = t('selected.empty');
     els.selectedSettlementMeta.innerHTML = '';
-    els.selectionHint.textContent = 'Щёлкните по окружности на карте или выберите пункт из таблицы-лидера.';
+    els.selectionHint.textContent = t('selected.hintDefault');
     return;
   }
 
@@ -1700,21 +1838,21 @@ function renderSelectedSettlementCard() {
   const activeScenarioLabel = getScenarioLabel(getScenario());
   const effectiveCentralText = getEffectiveCentralPlaceText(details.settlement_id);
   els.selectedSettlementSummary.className = 'selection-summary';
-  els.selectionHint.textContent = 'Карточка показывает атрибуты выбранного населённого пункта из файла Settlement_names.csv.';
+  els.selectionHint.textContent = t('selected.hintDetails');
 
   els.selectedSettlementSummary.innerHTML = `
     <div>
-      <div style="color:#475569;font-size:0.92rem;">${escapeHtml(details.Type_settlement || 'Тип не указан')} · ${escapeHtml(details.Municipality || 'Муниципалитет не указан')}</div>
-      <h3 style="margin:0.35rem 0 0;font-size:1.25rem;">${escapeHtml(details.Settlement_full_name || details.Settlement_name || 'Без названия')}</h3>
-      <div style="margin-top:0.35rem;color:#475569;">${escapeHtml(details.Region || 'Регион не указан')}</div>
-      <div style="margin-top:0.55rem;color:#0f172a;">${effectiveCentralText ? `Статус опорного пункта: <strong>${escapeHtml(String(effectiveCentralText))}</strong>.` : 'Статус опорного пункта не отмечен.'}</div>
-      <div style="margin-top:0.35rem;color:#475569;">Активный сценарий карты и пирамиды: ${escapeHtml(activeScenarioLabel)}</div>
+      <div style="color:#475569;font-size:0.92rem;">${escapeHtml(details.Type_settlement || t('selected.typeMissing'))} · ${escapeHtml(details.Municipality || t('selected.municipalityMissing'))}</div>
+      <h3 style="margin:0.35rem 0 0;font-size:1.25rem;">${escapeHtml(details.Settlement_full_name || details.Settlement_name || t('selected.unnamed'))}</h3>
+      <div style="margin-top:0.35rem;color:#475569;">${escapeHtml(translateRegionName(details.Region) || t('selected.regionMissing'))}</div>
+      <div style="margin-top:0.55rem;color:#0f172a;">${effectiveCentralText ? t('selected.centralStatus', { value: escapeHtml(String(effectiveCentralText)) }) : t('selected.centralNotMarked')}</div>
+      <div style="margin-top:0.35rem;color:#475569;">${escapeHtml(t('selected.activeScenario', { scenario: activeScenarioLabel }))}</div>
     </div>
     <div class="selection-grid">
-      <div class="summary-kpi"><div class="label">Численность (${getMapYear()})</div><div class="value">${formatInteger(summary.selectedPop)}</div></div>
-      <div class="summary-kpi"><div class="label">Базовый год (${getBaseYear()})</div><div class="value">${formatInteger(summary.basePop)}</div></div>
-      <div class="summary-kpi"><div class="label">Абсолютное изменение</div><div class="value">${formatSigned(summary.deltaAbs)}</div></div>
-      <div class="summary-kpi"><div class="label">Относительное изменение</div><div class="value">${formatPct(summary.deltaPct)}</div></div>
+      <div class="summary-kpi"><div class="label">${escapeHtml(t('selected.populationYear', { year: getMapYear() }))}</div><div class="value">${formatInteger(summary.selectedPop)}</div></div>
+      <div class="summary-kpi"><div class="label">${escapeHtml(t('selected.baseYear', { year: getBaseYear() }))}</div><div class="value">${formatInteger(summary.basePop)}</div></div>
+      <div class="summary-kpi"><div class="label">${escapeHtml(t('selected.absoluteChange'))}</div><div class="value">${formatSigned(summary.deltaAbs)}</div></div>
+      <div class="summary-kpi"><div class="label">${escapeHtml(t('selected.relativeChange'))}</div><div class="value">${formatPct(summary.deltaPct)}</div></div>
     </div>
   `;
 
@@ -1723,7 +1861,7 @@ function renderSelectedSettlementCard() {
     `
       <tr>
         <th>Central_places</th>
-        <td>${escapeHtml(effectiveCentralText || 'не отмечен')}</td>
+        <td>${escapeHtml(effectiveCentralText || t('selected.notMarked'))}</td>
       </tr>
     `,
     ...Object.entries(details)
@@ -1732,7 +1870,7 @@ function renderSelectedSettlementCard() {
       .map(([key, value]) => `
         <tr>
           <th>${escapeHtml(key)}</th>
-          <td>${escapeHtml(formatAny(value))}</td>
+          <td>${escapeHtml(formatGeoFieldValue(key, value))}</td>
         </tr>
       `),
   ].join('');
@@ -1749,7 +1887,7 @@ function renderSelectedSettlementCard() {
 function renderSelectedSettlementChart() {
   const summary = state.currentSelectionBundle;
   if (!summary?.details) {
-    renderEmptyPlot('settlementChart', 'Выберите населённый пункт на карте, чтобы построить его временной ряд.');
+    renderEmptyPlot('settlementChart', t('empty.settlementChart'));
     return;
   }
 
@@ -1761,10 +1899,10 @@ function renderSelectedSettlementChart() {
       y: actualSeries.y,
       type: 'scatter',
       mode: 'lines+markers',
-      name: 'Фактические данные',
+      name: t('chart.actualData'),
       line: { color: '#1d4ed8', width: 3 },
       marker: { color: '#1d4ed8', size: 9 },
-      hovertemplate: '<b>%{x}</b><br>Население: %{y:,}<extra></extra>',
+      hovertemplate: t('chart.hoverPopulation'),
     });
   }
 
@@ -1778,19 +1916,19 @@ function renderSelectedSettlementChart() {
       y: filtered.y,
       type: 'scatter',
       mode: 'lines',
-      name: `Прогноз (${getScenarioLabel(scenarioId)})`,
+      name: t('chart.forecast', { scenario: getScenarioLabel(scenarioId) }),
       line: { color: style.color, width: 3, dash: style.dash },
-      hovertemplate: '<b>%{x}</b><br>Население: %{y:,}<extra></extra>',
+      hovertemplate: t('chart.hoverPopulation'),
     });
   }
 
   if (!traces.length) {
-    renderEmptyPlot('settlementChart', 'В пределах выбранного временного интервала данные отсутствуют.');
+    renderEmptyPlot('settlementChart', t('empty.timeWindow'));
     return;
   }
 
-  const title = summary.details.Settlement_full_name || summary.details.Settlement_name || 'Населённый пункт';
-  const layout = buildLineLayout('Численность населения', title);
+  const title = summary.details.Settlement_full_name || summary.details.Settlement_name || t('selected.settlementFallback');
+  const layout = buildLineLayout(t('chart.populationTitle'), title);
   Plotly.newPlot('settlementChart', traces, layout, buildPlotConfig(buildFilename('settlement_series')));
 }
 
@@ -1798,7 +1936,7 @@ async function renderPyramid() {
   const summary = state.currentSelectionBundle;
   if (!summary?.details) {
     state.currentPyramidBundle = null;
-    renderEmptyPlot('pyramidChart', 'Выберите населённый пункт, чтобы рассчитать половозрастную пирамиду.');
+    renderEmptyPlot('pyramidChart', t('empty.pyramidSelect'));
     return;
   }
 
@@ -1810,7 +1948,7 @@ async function renderPyramid() {
 
   if (!oktmo || !Number.isFinite(settlementPop) || settlementPop <= 0) {
     state.currentPyramidBundle = null;
-    renderEmptyPlot('pyramidChart', 'Для выбранного пункта отсутствуют данные, необходимые для построения пирамиды.');
+    renderEmptyPlot('pyramidChart', t('empty.pyramidNoData'));
     return;
   }
 
@@ -1825,7 +1963,7 @@ async function renderPyramid() {
 
   if (!rows.length) {
     state.currentPyramidBundle = null;
-    renderEmptyPlot('pyramidChart', 'Для выбранного сочетания «населённый пункт — год — сценарий» муниципальный возрастно-половой профиль отсутствует.');
+    renderEmptyPlot('pyramidChart', t('empty.pyramidProfile'));
     return;
   }
 
@@ -1850,9 +1988,9 @@ async function renderPyramid() {
       y: ages,
       type: 'bar',
       orientation: 'h',
-      name: 'Мужчины',
+      name: t('chart.male'),
       marker: { color: '#2563eb' },
-      hovertemplate: '<b>Возраст %{customdata}</b><br>Мужчины: %{text:,}<extra></extra>',
+      hovertemplate: t('chart.hoverAgeMale'),
       customdata: ages.map((age) => (age >= 100 ? '100+' : age)),
       text: male.map((v) => Math.abs(v)),
     },
@@ -1861,16 +1999,16 @@ async function renderPyramid() {
       y: ages,
       type: 'bar',
       orientation: 'h',
-      name: 'Женщины',
+      name: t('chart.female'),
       marker: { color: '#ec4899' },
-      hovertemplate: '<b>Возраст %{customdata}</b><br>Женщины: %{x:,}<extra></extra>',
+      hovertemplate: t('chart.hoverAgeFemale'),
       customdata: ages.map((age) => (age >= 100 ? '100+' : age)),
     },
   ];
 
   const layout = {
     title: {
-      text: `${details.Settlement_full_name || details.Settlement_name || 'Населённый пункт'} · ${year}`,
+      text: `${details.Settlement_full_name || details.Settlement_name || t('selected.settlementFallback')} · ${year}`,
       font: { size: 16 },
       x: 0.02,
       xanchor: 'left',
@@ -1882,7 +2020,7 @@ async function renderPyramid() {
     plot_bgcolor: '#ffffff',
     legend: { orientation: 'h', x: 0, y: 1.08 },
     xaxis: {
-      title: 'Численность',
+      title: t('chart.countAxis'),
       zeroline: true,
       zerolinewidth: 1,
       zerolinecolor: '#94a3b8',
@@ -1891,7 +2029,7 @@ async function renderPyramid() {
       tickmode: 'auto',
     },
     yaxis: {
-      title: 'Возраст',
+      title: t('chart.age'),
       dtick: 5,
       gridcolor: '#f1f5f9',
       tickmode: 'array',
@@ -1900,7 +2038,7 @@ async function renderPyramid() {
     },
     annotations: [
       {
-        text: `Общая численность: ${formatInteger(settlementPop)} · сценарий: ${getScenarioLabel(scenario)}`,
+        text: t('chart.totalPopulation', { value: formatInteger(settlementPop), scenario: getScenarioLabel(scenario) }),
         xref: 'paper',
         yref: 'paper',
         x: 0,
@@ -1976,7 +2114,7 @@ function buildLineLayout(yTitle, subtitle) {
     hovermode: 'x unified',
     annotations: [
       {
-        text: `Диапазон графика: ${getBaseYear()}–${getChartEndYear()}`,
+        text: t('chart.range', { baseYear: getBaseYear(), endYear: getChartEndYear() }),
         xref: 'paper',
         yref: 'paper',
         x: 0,
@@ -1988,7 +2126,7 @@ function buildLineLayout(yTitle, subtitle) {
       },
     ],
     xaxis: {
-      title: 'Год',
+      title: t('chart.yearAxis'),
       tickmode: 'auto',
       gridcolor: '#e2e8f0',
       zeroline: false,
@@ -2005,6 +2143,7 @@ function buildLineLayout(yTitle, subtitle) {
 function buildPlotConfig(filename) {
   return {
     displaylogo: false,
+    displayModeBar: false,
     responsive: true,
     toImageButtonOptions: {
       format: 'png',
@@ -2026,20 +2165,20 @@ async function exportMapPng() {
     });
     canvas.toBlob((blob) => {
       if (!blob) {
-        showError('Не удалось подготовить PNG карты.');
+        showError(t('errors.mapPngBlob'));
         return;
       }
       downloadBlob(blob, `${buildFilename('map')}.png`);
     });
   } catch (error) {
-    handleError(new Error(`Не удалось сохранить карту в PNG: ${error?.message || error}`));
+    handleError(new Error(t('errors.mapPng', { message: error?.message || error })));
   }
 }
 
 async function exportElementPng(elementId, filename) {
   const element = document.getElementById(elementId);
   if (!element) {
-    showError('Не удалось найти элемент для экспорта PNG.');
+    showError(t('errors.pngElement'));
     return;
   }
   try {
@@ -2051,20 +2190,20 @@ async function exportElementPng(elementId, filename) {
     });
     canvas.toBlob((blob) => {
       if (!blob) {
-        showError('Не удалось подготовить PNG.');
+        showError(t('errors.pngBlob'));
         return;
       }
       downloadBlob(blob, `${filename}.png`);
     });
   } catch (error) {
-    handleError(new Error(`Не удалось сохранить PNG: ${error?.message || error}`));
+    handleError(new Error(t('errors.png', { message: error?.message || error })));
   }
 }
 
 function exportPlotPng(containerId, filename) {
   const node = document.getElementById(containerId);
   if (!node || !node.data || !node.data.length) {
-    showError('Для экспорта PNG сначала нужно построить соответствующий график.');
+    showError(t('errors.plotPng'));
     return;
   }
   Plotly.downloadImage(node, { format: 'png', filename, width: 1400, height: 800, scale: 2 });
@@ -2072,7 +2211,7 @@ function exportPlotPng(containerId, filename) {
 
 function exportCurrentSelectionXlsx() {
   if (!state.currentMapData.length) {
-    showError('Нет данных для экспорта: текущая выборка пуста.');
+    showError(t('errors.selectionEmpty'));
     return;
   }
   const rows = state.currentMapData.map((row) => ({
@@ -2097,19 +2236,19 @@ function exportCurrentSelectionXlsx() {
 
 function exportAggregateXlsx() {
   if (!state.currentAggregateSeries) {
-    showError('Сначала нужно построить агрегированный временной ряд.');
+    showError(t('errors.aggregateMissing'));
     return;
   }
   const rows = [];
   const actualSeries = filterSeriesToWindow(state.currentAggregateSeries.actualYears, state.currentAggregateSeries.actualValues);
   actualSeries.x.forEach((year, index) => {
-    rows.push({ year, population: actualSeries.y[index], source: 'Фактические данные' });
+    rows.push({ year, population: actualSeries.y[index], source: t('export.actualData') });
   });
   for (const scenarioId of getSelectedChartScenarios('aggregate')) {
     const scenarioSeries = state.currentAggregateSeries.forecastsByScenario[scenarioId];
     const filtered = filterSeriesToWindow(scenarioSeries?.years || [], scenarioSeries?.values || []);
     filtered.x.forEach((year, index) => {
-      rows.push({ year, population: filtered.y[index], source: `Прогноз (${getScenarioLabel(scenarioId)})` });
+      rows.push({ year, population: filtered.y[index], source: t('export.forecast', { scenario: getScenarioLabel(scenarioId) }) });
     });
   }
   exportWorkbook([{ name: 'aggregate', rows }], `${buildFilename('aggregate')}.xlsx`);
@@ -2118,18 +2257,18 @@ function exportAggregateXlsx() {
 function exportSettlementSeriesXlsx() {
   const summary = state.currentSelectionBundle;
   if (!summary?.details) {
-    showError('Сначала выберите населённый пункт.');
+    showError(t('errors.selectSettlement'));
     return;
   }
   const rows = [];
   const actualSeries = filterSeriesToWindow(summary.actualYears, summary.actualValues);
   actualSeries.x.forEach((year, index) => {
-    rows.push({ year, population: actualSeries.y[index], source: 'Фактические данные' });
+    rows.push({ year, population: actualSeries.y[index], source: t('export.actualData') });
   });
   for (const scenarioId of getSelectedChartScenarios('settlement')) {
     const filtered = filterSeriesToWindow(summary.seriesByScenario[scenarioId]?.years || [], summary.seriesByScenario[scenarioId]?.values || []);
     filtered.x.forEach((year, index) => {
-      rows.push({ year, population: filtered.y[index], source: `Прогноз (${getScenarioLabel(scenarioId)})` });
+      rows.push({ year, population: filtered.y[index], source: t('export.forecast', { scenario: getScenarioLabel(scenarioId) }) });
     });
   }
   exportWorkbook([{ name: 'settlement_series', rows }], `${buildFilename('settlement_series')}.xlsx`);
@@ -2137,7 +2276,7 @@ function exportSettlementSeriesXlsx() {
 
 function exportPyramidXlsx() {
   if (!state.currentPyramidBundle?.rows?.length) {
-    showError('Сначала постройте половозрастную пирамиду.');
+    showError(t('errors.pyramidMissing'));
     return;
   }
   const rows = state.currentPyramidBundle.rows.map((row) => ({
@@ -2155,12 +2294,12 @@ function buildChartExportRows(actualYears, actualValues, forecastMap, selectedSc
   const rows = [];
   const actualSeries = filterSeriesToWindow(actualYears || [], actualValues || []);
   actualSeries.x.forEach((year, index) => {
-    rows.push({ year, [valueField]: actualSeries.y[index], source: 'Фактические данные' });
+    rows.push({ year, [valueField]: actualSeries.y[index], source: t('export.actualData') });
   });
   selectedScenarios.forEach((scenarioId) => {
     const filtered = filterSeriesToWindow(forecastMap?.[scenarioId]?.years || [], forecastMap?.[scenarioId]?.values || []);
     filtered.x.forEach((year, index) => {
-      rows.push({ year, [valueField]: filtered.y[index], source: `Прогноз (${getScenarioLabel(scenarioId)})` });
+      rows.push({ year, [valueField]: filtered.y[index], source: t('export.forecast', { scenario: getScenarioLabel(scenarioId) }) });
     });
   });
   return rows;
@@ -2169,7 +2308,7 @@ function buildChartExportRows(actualYears, actualValues, forecastMap, selectedSc
 function exportFertilityXlsx() {
   const bundle = state.currentComponentSeries?.fertility;
   if (!bundle) {
-    showError('Сначала постройте блок рождаемости.');
+    showError(t('errors.fertilityMissing'));
     return;
   }
   const selectedScenarios = getSelectedChartScenarios('fertility');
@@ -2184,7 +2323,7 @@ function exportFertilityXlsx() {
 function exportMortalityXlsx() {
   const bundle = state.currentComponentSeries?.mortality;
   if (!bundle) {
-    showError('Сначала постройте блок смертности.');
+    showError(t('errors.mortalityMissing'));
     return;
   }
   const selectedScenarios = getSelectedChartScenarios('mortality');
@@ -2199,14 +2338,14 @@ function exportMortalityXlsx() {
 function exportMigrationXlsx() {
   const bundle = state.currentComponentSeries?.migration;
   if (!bundle) {
-    showError('Сначала постройте блок миграции.');
+    showError(t('errors.migrationMissing'));
     return;
   }
   const rows = [];
   const actualMeta = [
-    { key: 'migInActual', label: 'Фактический приток' },
-    { key: 'migOutActual', label: 'Фактический отток' },
-    { key: 'migNetActual', label: 'Фактическое сальдо' },
+    { key: 'migInActual', label: t('export.actualMigIn') },
+    { key: 'migOutActual', label: t('export.actualMigOut') },
+    { key: 'migNetActual', label: t('export.actualMigNet') },
   ];
   actualMeta.forEach((meta) => {
     const filtered = filterSeriesToWindow(bundle.actualYears, bundle[meta.key]);
@@ -2219,9 +2358,9 @@ function exportMigrationXlsx() {
   selectedScenarios.forEach((scenarioId) => {
     const forecast = bundle.forecastsByScenario?.[scenarioId];
     [
-      ['migIn', 'Прогноз притока'],
-      ['migOut', 'Прогноз оттока'],
-      ['migNet', 'Прогноз сальдо'],
+      ['migIn', t('export.forecastMigIn')],
+      ['migOut', t('export.forecastMigOut')],
+      ['migNet', t('export.forecastMigNet')],
     ].forEach(([field, label]) => {
       const filtered = filterSeriesToWindow(forecast?.years || [], forecast?.[field] || []);
       filtered.x.forEach((year, index) => {
@@ -2243,17 +2382,17 @@ function exportMigrationXlsx() {
 function exportSelectedDetailsXlsx() {
   const summary = state.currentSelectionBundle;
   if (!summary?.details) {
-    showError('Сначала выберите населённый пункт.');
+    showError(t('errors.selectSettlement'));
     return;
   }
   const effectiveCentralText = getEffectiveCentralPlaceText(summary.details.settlement_id);
   const excludedKeys = new Set(['latitude', 'longitude', 'settlement_id', 'oktmo_stable', 'oktmo_syn', 'is_central_place', 'central_places']);
   const rows = [
-    { field: 'Central_places', value: effectiveCentralText || 'не отмечен' },
+    { field: 'Central_places', value: effectiveCentralText || t('selected.notMarked') },
     ...Object.entries(summary.details)
       .filter(([, value]) => !isBlank(value))
       .filter(([field]) => !excludedKeys.has(String(field).toLowerCase()))
-      .map(([field, value]) => ({ field, value: formatAny(value) })),
+      .map(([field, value]) => ({ field, value: formatGeoFieldValue(field, value) })),
   ];
   exportWorkbook([{ name: 'settlement_details', rows }], `${buildFilename('settlement_details')}.xlsx`);
 }
@@ -2399,18 +2538,19 @@ function syncPyramidYearIfNeeded(forceRender = false) {
 }
 
 function getScenarioLabel(scenarioId) {
-  return state.config.scenarios.find((scenario) => scenario.id === scenarioId)?.label || scenarioId;
+  const fallback = state.config.scenarios.find((scenario) => scenario.id === scenarioId)?.label || scenarioId;
+  return t(`scenario.${scenarioId}`, {}, fallback);
 }
 
 function describeCurrentFilter() {
   const selectedRegions = normalizeMultiValue(state.ui.regionTom.getValue());
   const selectedMunicipalities = normalizeMultiValue(state.ui.municipalityTom.getValue());
   if (!selectedRegions.length && !selectedMunicipalities.length) {
-    return 'Вся Россия';
+    return t('filters.allRussia');
   }
   const parts = [];
-  if (selectedRegions.length) parts.push(`субъекты РФ: ${selectedRegions.length}`);
-  if (selectedMunicipalities.length) parts.push(`муниципалитеты: ${selectedMunicipalities.length}`);
+  if (selectedRegions.length) parts.push(t('filters.regionsCount', { count: formatInteger(selectedRegions.length) }));
+  if (selectedMunicipalities.length) parts.push(t('filters.municipalitiesCount', { count: formatInteger(selectedMunicipalities.length) }));
   return parts.join(' · ');
 }
 
@@ -2517,31 +2657,34 @@ function clamp(value, min, max) {
 
 function formatInteger(value) {
   if (!Number.isFinite(value)) return '—';
-  return Math.round(value).toLocaleString('ru-RU');
+  return Math.round(value).toLocaleString(numberLocale());
 }
 
 function formatSigned(value) {
   if (!Number.isFinite(value)) return '—';
-  return `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString('ru-RU')}`;
+  return `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString(numberLocale())}`;
 }
 
 function formatPct(value) {
   if (!Number.isFinite(value)) return '—';
-  return `${value > 0 ? '+' : ''}${value.toLocaleString('ru-RU', { maximumFractionDigits: 2, minimumFractionDigits: 0 })}%`;
+  return `${value > 0 ? '+' : ''}${value.toLocaleString(numberLocale(), { maximumFractionDigits: 2, minimumFractionDigits: 0 })}%`;
 }
 
 function formatSignedPctThreshold(value) {
   if (!Number.isFinite(value)) return '—';
-  return `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString('ru-RU')}%`;
+  return `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString(numberLocale())}%`;
 }
 
 function pluralYears(value) {
+  if (currentLanguage() !== 'ru') {
+    return Number(value) === 1 ? t('units.year_one') : t('units.year_many');
+  }
   const abs = Math.abs(Number(value)) % 100;
   const last = abs % 10;
-  if (abs > 10 && abs < 20) return 'лет';
-  if (last === 1) return 'год';
-  if (last >= 2 && last <= 4) return 'года';
-  return 'лет';
+  if (abs > 10 && abs < 20) return t('units.year_many');
+  if (last === 1) return t('units.year_one');
+  if (last >= 2 && last <= 4) return t('units.year_few');
+  return t('units.year_many');
 }
 
 function isLikelyYear(value) {
@@ -2552,10 +2695,10 @@ function formatAny(value) {
   if (value == null || value === '') return '—';
   if (typeof value === 'number') {
     if (isLikelyYear(value)) return String(value);
-    if (Number.isInteger(value)) return value.toLocaleString('ru-RU');
-    return value.toLocaleString('ru-RU', { maximumFractionDigits: 6 });
+    if (Number.isInteger(value)) return value.toLocaleString(numberLocale());
+    return value.toLocaleString(numberLocale(), { maximumFractionDigits: 6 });
   }
-  if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
+  if (typeof value === 'boolean') return value ? t('units.yes') : t('units.no');
   return String(value);
 }
 
@@ -2613,7 +2756,7 @@ async function queryExec(sql) {
   await state.conn.query(sql);
 }
 
-function setLoading(isVisible, title = 'Загрузка…', subtitle = '') {
+function setLoading(isVisible, title = t('loading.defaultTitle'), subtitle = '') {
   els.loadingTitle.textContent = title;
   els.loadingSubtitle.textContent = subtitle;
   els.loadingOverlay.classList.toggle('visible', Boolean(isVisible));
