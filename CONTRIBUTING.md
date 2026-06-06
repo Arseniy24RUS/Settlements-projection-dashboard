@@ -1,4 +1,4 @@
-# Contributing
+﻿# Contributing
 
 Thank you for improving `Settlements-projection-dashboard`. The project welcomes small fixes, documentation improvements, tests, and research-methodology questions.
 
@@ -25,7 +25,7 @@ Open <http://127.0.0.1:4175/>.
 - For data or methodology changes, update `docs/methodology.md` and describe provenance, assumptions, and affected files.
 - For interface text changes, update `locales/en.json`, `locales/ru.json`, and tests as needed.
 - For visual changes, include screenshots or describe what was checked manually.
-- Respect `LICENSE`, `LICENSE-DOCS-AND-DATA.md`, and `THIRD_PARTY_NOTICES.md`.
+- Respect `LICENSE`, `docs/license-docs-and-data.md`, and `THIRD_PARTY_NOTICES.md`.
 
 ## Pull Request Checklist
 
@@ -64,4 +64,4 @@ npx http-server . -a 127.0.0.1 -p 4175 -c-1
 - При изменении данных или методики обновляйте `docs/methodology.md` и описывайте происхождение, предпосылки и затронутые файлы.
 - При изменении текстов интерфейса обновляйте `locales/en.json`, `locales/ru.json` и тесты при необходимости.
 - При визуальных изменениях прикладывайте скриншоты или описывайте ручную проверку.
-- Соблюдайте `LICENSE`, `LICENSE-DOCS-AND-DATA.md` и `THIRD_PARTY_NOTICES.md`.
+- Соблюдайте `LICENSE`, `docs/license-docs-and-data.md` и `THIRD_PARTY_NOTICES.md`.

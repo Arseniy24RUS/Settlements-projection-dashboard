@@ -1,4 +1,4 @@
-# Settlements Projection Dashboard · Spatial Population Analytics
+﻿# Settlements Projection Dashboard · Spatial Population Analytics
 
 [English](#english) · [Русский](#русский)
 
@@ -80,7 +80,7 @@ If you use the dashboard, data structure or visualization design, please cite:
 | Material | License | Notes |
 | --- | --- | --- |
 | Source code | [MIT](LICENSE) | Application code, tests and build/runtime scripts. |
-| Documentation, data and dashboard content | [CC BY 4.0](LICENSE-DOCS-AND-DATA.md) | Documentation, data files, figures, screenshots and text unless otherwise stated. |
+| Documentation, data and dashboard content | [CC BY 4.0](docs/license-docs-and-data.md) | Documentation, data files, figures, screenshots and text unless otherwise stated. |
 | Third-party data, maps, libraries, logos and institutional names | Original provider terms | See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). |
 
 ---
@@ -157,5 +157,5 @@ python -m http.server 8000
 | Материал | Лицензия | Примечание |
 | --- | --- | --- |
 | Исходный код | [MIT](LICENSE) | Код приложения, тесты и scripts сборки/запуска. |
-| Документация, данные и контент дашборда | [CC BY 4.0](LICENSE-DOCS-AND-DATA.md) | Документация, файлы данных, рисунки, скриншоты и тексты, если явно не указано иное. |
+| Документация, данные и контент дашборда | [CC BY 4.0](docs/license-docs-and-data.md) | Документация, файлы данных, рисунки, скриншоты и тексты, если явно не указано иное. |
 | Сторонние данные, карты, библиотеки, логотипы и институциональные названия | Условия первоначальных поставщиков | См. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). |
