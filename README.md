@@ -34,6 +34,8 @@ GitHub Pages: <https://arseniy24rus.github.io/Settlements-projection-dashboard/>
 
 The dashboard answers a practical question: how can projected demographic change be inspected at the settlement level rather than only at the level of large administrative regions? The interface is designed to support comparison, filtering, mapping and visual inspection of population dynamics across localities.
 
+Detailed research methodology: [docs/methodology.md](docs/methodology.md).
+
 ### Repository structure
 
 ```text
@@ -75,7 +77,11 @@ If you use the dashboard, data structure or visualization design, please cite:
 
 ### License
 
-Unless otherwise stated, source code is released under the MIT License. Data, documentation and dashboard text are released under Creative Commons Attribution 4.0 International (CC BY 4.0). External source data may be governed by the terms of their original providers.
+| Material | License | Notes |
+| --- | --- | --- |
+| Source code | [MIT](LICENSE) | Application code, tests and build/runtime scripts. |
+| Documentation, data and dashboard content | [CC BY 4.0](LICENSE-DOCS-AND-DATA.md) | Documentation, data files, figures, screenshots and text unless otherwise stated. |
+| Third-party data, maps, libraries, logos and institutional names | Original provider terms | See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). |
 
 ---
 
@@ -104,6 +110,8 @@ GitHub Pages: <https://arseniy24rus.github.io/Settlements-projection-dashboard/>
 ### Аналитическая задача
 
 Дашборд отвечает на практический вопрос: как изучать прогнозируемые демографические изменения на уровне населённых пунктов, а не только крупных административных регионов? Интерфейс ориентирован на сравнение, фильтрацию, картографирование и визуальный анализ динамики численности населения по локальным территориям.
+
+Подробная методология исследования: [docs/methodology.md](docs/methodology.md).
 
 ### Структура репозитория
 
@@ -146,4 +154,8 @@ python -m http.server 8000
 
 ### Лицензия
 
-Если явно не указано иное, исходный код распространяется по лицензии MIT. Данные, документация и тексты дашборда распространяются по лицензии Creative Commons Attribution 4.0 International (CC BY 4.0). Внешние исходные данные могут регулироваться условиями их первоначальных поставщиков.
+| Материал | Лицензия | Примечание |
+| --- | --- | --- |
+| Исходный код | [MIT](LICENSE) | Код приложения, тесты и scripts сборки/запуска. |
+| Документация, данные и контент дашборда | [CC BY 4.0](LICENSE-DOCS-AND-DATA.md) | Документация, файлы данных, рисунки, скриншоты и тексты, если явно не указано иное. |
+| Сторонние данные, карты, библиотеки, логотипы и институциональные названия | Условия первоначальных поставщиков | См. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). |
